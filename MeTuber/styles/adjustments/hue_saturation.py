@@ -5,6 +5,7 @@ from styles.base import Style
 
 class HueSaturation(Style):
     name = "Hue & Saturation"
+    category = "Adjustments"
     parameters = [
         {
             "name": "hue",

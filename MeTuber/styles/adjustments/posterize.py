@@ -4,6 +4,7 @@ from styles.base import Style
 
 class Posterize(Style):
     name = "Posterize"
+    category = "Adjustments"
     parameters = [
         {
             "name": "bits",

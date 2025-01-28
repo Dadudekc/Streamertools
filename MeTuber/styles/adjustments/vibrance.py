@@ -4,6 +4,7 @@ from styles.base import Style
 
 class Vibrance(Style):
     name = "Vibrance"
+    category = "Adjustments"
     parameters = [
         {
             "name": "vibrance",

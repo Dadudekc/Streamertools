@@ -8,6 +8,7 @@ class Threshold(Style):
     Applies a binary threshold to the input image.
     """
     name = "Threshold"
+    category = "Adjustments"
 
     def define_parameters(self):
         """

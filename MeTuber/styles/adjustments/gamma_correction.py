@@ -5,6 +5,7 @@ from styles.base import Style
 
 class GammaCorrection(Style):
     name = "Gamma Correction"
+    category = "Adjustments"
     parameters = [
         {
             "name": "gamma",

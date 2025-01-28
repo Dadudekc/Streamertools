@@ -4,15 +4,17 @@ from styles.base import Style
 
 class Solarize(Style):
     """
-    A style that solarizes the input image.
+    A style that applies a solarize effect to the input image.
     """
     name = "Solarize"
+    category = "Adjustments"
 
     def define_parameters(self):
         """
         Define parameters for the Solarize style.
-        
-        :return: List of parameter dictionaries.
+
+        Returns:
+            list: List of parameter dictionaries for the Solarize effect.
         """
         return [
             {
@@ -30,10 +32,17 @@ class Solarize(Style):
         """
         Apply the solarize effect to the input image.
 
-        :param image: Input image as a NumPy array.
-        :param params: Dictionary of parameters.
-        :return: Solarized image.
+        Args:
+            image (np.ndarray): Input image as a NumPy array.
+            params (dict, optional): Dictionary of parameters.
+
+        Returns:
+            np.ndarray: Solarized image.
+
+        Raises:
+            ValueError: If the input image is None or invalid.
         """
+        # Validate the input image
         if image is None:
             raise ValueError("Input image cannot be None.")
         if not isinstance(image, np.ndarray):
@@ -41,11 +50,11 @@ class Solarize(Style):
         if image.dtype != np.uint8:
             raise ValueError("Input image must have dtype of np.uint8.")
 
-        # Validate parameters
-        params = params or {}
-        params = self.validate_params(params)
+        # Validate and retrieve parameters
+        params = self.validate_params(params or {})
         threshold = params["threshold"]
 
-        # Solarize the image
+        # Apply the solarize effect
         solarized = np.where(image < threshold, image, 255 - image)
+
         return solarized.astype(np.uint8)

@@ -5,6 +5,7 @@ from styles.base import Style
 
 class Vintage(Style):
     name = "Vintage"
+    category = "Adjustments"
     parameters = [
         {
             "name": "vintage_strength",
