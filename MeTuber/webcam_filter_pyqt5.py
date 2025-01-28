@@ -1,22 +1,21 @@
-# D:\MeTuber\webcam_filter_pyqt5.py
+# webcam_filter_pyqt5.py
 
 import sys
 import os
 import json
 import subprocess
+import av
 import cv2
 import numpy as np
 import pyvirtualcam
-import av
-import importlib
-import pkgutil
 import logging
-
+import pkgutil
+import importlib
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QGroupBox,
     QFormLayout, QSlider, QPushButton, QMessageBox, QFileDialog, QComboBox, QTabWidget
 )
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from PyQt5.QtCore import Qt
 
 # Import GUI components
 from gui_components.device_selector import DeviceSelector
@@ -27,6 +26,9 @@ from gui_components.action_buttons import ActionButtons
 # Import the Style base class and Original style
 from styles.base import Style
 from styles.effects.original import Original
+
+# Import the updated WebcamThread
+from webcam_threading import WebcamThread
 
 # =============================================================================
 # 1. Config Load/Save
@@ -71,10 +73,8 @@ def list_devices():
     cmd = ['ffmpeg', '-list_devices', 'true', '-f', 'dshow', '-i', 'dummy']
     try:
         output = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode('utf-8', errors='ignore')
-        print("FFmpeg Output:\n", output)  # Debugging step
         for line in output.splitlines():
             line = line.strip()  # Remove leading/trailing spaces
-            print("Processing Line: ", line)  # Debugging step
             if line.startswith("[dshow") and '"' in line:
                 start_idx = line.find('"')
                 end_idx = line.rfind('"')
@@ -83,7 +83,6 @@ def list_devices():
                     devices.append(f"video={device_name}")
     except subprocess.CalledProcessError as e:
         logging.error(f"Could not enumerate devices using FFmpeg: {e}")
-    print("Parsed Devices: ", devices)  # Debugging step
     return devices
 
 # =============================================================================
@@ -101,7 +100,11 @@ def load_styles():
     style_instances = {}
     style_categories = {}
     styles_pkg = 'styles'
-    package = importlib.import_module(styles_pkg)
+    try:
+        package = importlib.import_module(styles_pkg)
+    except ImportError as e:
+        logging.error(f"Styles package not found: {e}")
+        return style_instances, style_categories
 
     for importer, modname, ispkg in pkgutil.walk_packages(package.__path__, styles_pkg + '.'):
         try:
@@ -121,127 +124,7 @@ def load_styles():
     return style_instances, style_categories
 
 # =============================================================================
-# 4. Webcam Processing Thread (Using PyAV)
-# =============================================================================
-
-class WebcamThread(QThread):
-    """
-    A QThread that captures video frames using PyAV, applies the chosen style,
-    and publishes them to a virtual camera with pyvirtualcam.
-    """
-    error_signal = pyqtSignal(str)
-    info_signal = pyqtSignal(str)
-
-    last_frame = None  # For snapshot feature
-
-    def __init__(self, input_device, style_instance, style_params):
-        super().__init__()
-        self.input_device = input_device
-        self.style_instance = style_instance
-        self.style_params = style_params
-        self._is_running = True
-
-    def run(self):
-        """
-        Continuously decode frames from the specified device using PyAV,
-        apply the chosen style, and send them to a virtual camera.
-        """
-        logging.info("WebcamThread started.")
-        self.error_signal.emit("Webcam thread started.")
-
-        try:
-            # Open the device with PyAV
-            container = av.open(self.input_device, format="dshow")
-            logging.info(f"Opened input device: {self.input_device}")
-            self.info_signal.emit(f"Opened input device: {self.input_device}")
-        except OSError as e:
-            self.error_signal.emit(f"Error opening webcam with PyAV: {e}")
-            logging.error(f"Error opening webcam with PyAV: {e}")
-            return
-
-        try:
-            # Start a pyvirtualcam Camera
-            with pyvirtualcam.Camera(width=640, height=480, fps=30, fmt=pyvirtualcam.PixelFormat.BGR) as cam:
-                self.info_signal.emit(f"Virtual camera started: {cam.device}")
-                logging.info(f"Virtual camera started: {cam.device}")
-
-                for frame in container.decode(video=0):
-                    if not self._is_running:
-                        logging.info("WebcamThread stopping as requested.")
-                        self.info_signal.emit("Webcam thread stopping.")
-                        break
-
-                    try:
-                        # Convert PyAV frame to NumPy array (BGR24)
-                        img = frame.to_ndarray(format="bgr24")
-                        logging.debug(f"Decoded frame shape: {img.shape}")
-
-                        # Apply the selected style (with current style parameters)
-                        styled_frame = self.style_instance.apply(img, self.style_params)
-                        logging.debug(f"Styled frame shape: {styled_frame.shape}")
-
-                        # Convert single-channel frames to BGR if needed
-                        if len(styled_frame.shape) == 2:
-                            styled_frame = cv2.cvtColor(styled_frame, cv2.COLOR_GRAY2BGR)
-                            logging.debug("Converted grayscale frame to BGR.")
-
-                        # Ensure the camera resolution is valid
-                        if not isinstance(cam.width, int) or not isinstance(cam.height, int):
-                            raise ValueError(f"Invalid camera resolution: {cam.width}x{cam.height}")
-
-                        # Resize to match virtual camera resolution
-                        resized_frame = cv2.resize(styled_frame, (cam.width, cam.height))
-                        logging.debug(f"Resized frame shape: {resized_frame.shape}")
-
-                        # Send frame to virtual camera
-                        cam.send(resized_frame)
-                        cam.sleep_until_next_frame()
-
-                        # Save the last processed frame for snapshots
-                        self.last_frame = resized_frame.copy()
-
-                    except ValueError as ve:
-                        logging.error(f"ValueError in frame processing: {ve}")
-                        self.error_signal.emit(f"Parameter Error: {ve}")
-                        self.stop()
-                        break
-
-                    except Exception as e:
-                        logging.error(f"Unexpected error in frame processing: {e}")
-                        self.error_signal.emit(f"Error processing frame: {e}")
-                        self.stop()
-                        break
-
-        except pyvirtualcam.CameraError as e:
-            self.error_signal.emit(f"Virtual camera error: {e}")
-            logging.error(f"Virtual camera error: {e}")
-        except KeyboardInterrupt:
-            self.info_signal.emit("Streaming stopped by user.")
-            logging.info("Streaming stopped by user.")
-        except Exception as e:
-            self.error_signal.emit(f"Unexpected error: {e}")
-            logging.error(f"Unexpected error: {e}")
-        finally:
-            # Release resources
-            container.close()
-            logging.info("WebcamThread terminated.")
-            self.info_signal.emit("Webcam thread terminated.")
-
-    def update_params(self, new_params):
-        """Update style parameters in real-time."""
-        self.style_params = new_params
-        logging.info("WebcamThread parameters updated.")
-        self.info_signal.emit("Style parameters updated.")
-
-    def stop(self):
-        """Stop the webcam processing loop."""
-        self._is_running = False
-        self.wait()
-        logging.info("WebcamThread has been stopped.")
-        self.info_signal.emit("Webcam thread has been stopped.")
-
-# =============================================================================
-# 5. PyQt5 GUI
+# 4. PyQt5 GUI
 # =============================================================================
 
 class WebcamApp(QWidget):
@@ -273,7 +156,11 @@ class WebcamApp(QWidget):
         """Validate and load settings, resetting invalid parameters."""
         for style_name, style_instance in self.style_instances.items():
             style_params = self.settings.get("parameters", {}).get(style_name, {})
-            validated_params = style_instance.validate_params(style_params)
+            try:
+                validated_params = style_instance.validate_params(style_params)
+            except Exception as e:
+                logging.warning(f"Invalid parameters for style '{style_name}': {e}. Resetting to defaults.")
+                validated_params = {param['name']: param['default'] for param in style_instance.define_parameters()}
             self.settings["parameters"][style_name] = validated_params
         save_settings(self.settings)
 
@@ -323,8 +210,14 @@ class WebcamApp(QWidget):
 
         if self.current_style:
             logging.info(f"Updating parameters for style: {selected_style_name}")
+            
+            # Ensure all parameters have default values if missing
+            for param in self.current_style.define_parameters():
+                if param["name"] not in self.current_style_params:
+                    self.current_style_params[param["name"]] = param.get("default", 0)
+            
             self.parameter_controls.update_parameters(
-                self.current_style.parameters,
+                self.current_style.define_parameters(),
                 self.current_style_params,
                 self.on_param_changed
             )
@@ -337,8 +230,7 @@ class WebcamApp(QWidget):
         so the style changes reflect immediately.
         """
         self.current_style_params[param_name] = value
-        if label_widget:
-            label_widget.setText(f"{value}" if isinstance(value, int) else f"{value:.1f}")
+        label_widget.setText(f"{value}" if isinstance(value, int) else f"{value:.1f}")
 
         # Save the updated parameter
         selected_style_name = self.style_tab_manager.get_current_style()
@@ -428,10 +320,6 @@ class WebcamApp(QWidget):
             self.thread.stop()
             logging.info("Application closed. WebcamThread stopped.")
         event.accept()
-
-# =============================================================================
-# 6. Main Entry Point
-# =============================================================================
 
 def main():
     # Setup logging
