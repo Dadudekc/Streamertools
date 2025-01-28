@@ -1,0 +1,6 @@
+PyQt5
+opencv-python
+opencv-contrib-python
+numpy
+pyvirtualcam
+av
