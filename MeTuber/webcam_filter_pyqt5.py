@@ -1,5 +1,6 @@
 # webcam_filter_pyqt5.py
 
+import inspect
 import sys
 import os
 import json
@@ -91,37 +92,69 @@ def list_devices():
 
 def load_styles():
     """
-    Dynamically load all Style subclasses from the styles package and categorize them.
+    Dynamically loads all Style subclasses from the styles and adjustments packages and categorizes them.
 
     Returns:
-        tuple: A dictionary of style instances keyed by their names, and a dictionary of categories
-               with lists of style names.
+        tuple: 
+            - A dictionary of style instances keyed by their names.
+            - A dictionary of categories with lists of unique style names.
     """
     style_instances = {}
     style_categories = {}
-    styles_pkg = 'styles'
-    try:
-        package = importlib.import_module(styles_pkg)
-    except ImportError as e:
-        logging.error(f"Styles package not found: {e}")
-        return style_instances, style_categories
 
-    for importer, modname, ispkg in pkgutil.walk_packages(package.__path__, styles_pkg + '.'):
+    # List of all style-related packages to scan
+    packages_to_scan = ['styles']
+
+    seen_classes = set()  # Track loaded classes to prevent duplicates
+
+    for pkg_name in packages_to_scan:
+        logging.debug(f"Scanning package: {pkg_name}")
         try:
-            module = importlib.import_module(modname)
-            for cls in module.__dict__.values():
-                if isinstance(cls, type) and issubclass(cls, Style) and cls is not Style:
-                    instance = cls()
-                    category = getattr(instance, 'category', 'Uncategorized')
-                    if category not in style_categories:
-                        style_categories[category] = []
-                    style_categories[category].append(instance.name)
-                    style_instances[instance.name] = instance
-                    logging.info(f"Loaded style: {instance.name} under category: {category}")
-        except Exception as e:
-            logging.error(f"Failed to load style module {modname}: {e}")
+            package = importlib.import_module(pkg_name)
+        except ImportError as e:
+            logging.error(f"Error loading package {pkg_name}: {e}")
+            continue  # Skip this package and move to the next
+
+        for _, modname, ispkg in pkgutil.walk_packages(package.__path__, package.__name__ + "."):
+            if ispkg:
+                continue  # Skip sub-packages
+
+            logging.debug(f"Found module: {modname}")
+            try:
+                module = importlib.import_module(modname)
+
+                for cls_name in dir(module):
+                    cls = getattr(module, cls_name)
+
+                    if (
+                        inspect.isclass(cls) and
+                        issubclass(cls, Style) and
+                        cls is not Style and
+                        not inspect.isabstract(cls) and
+                        cls not in seen_classes  # Prevent duplicate entries
+                    ):
+                        try:
+                            instance = cls()  # Attempt to instantiate
+                            seen_classes.add(cls)
+
+                            category = getattr(instance, "category", "Uncategorized")
+                            if category not in style_categories:
+                                style_categories[category] = []
+
+                            if instance.name not in style_categories[category]:  # Avoid duplicate names
+                                style_categories[category].append(instance.name)
+
+                            style_instances[instance.name] = instance
+                            logging.info(f"Loaded style: {instance.name} under category: {category}")
+
+                        except Exception as instantiation_error:
+                            logging.error(f"Failed to instantiate style '{cls.__name__}': {instantiation_error}")
+
+            except Exception as module_error:
+                logging.error(f"Failed to load module '{modname}': {module_error}")
 
     return style_instances, style_categories
+
 
 # =============================================================================
 # 4. PyQt5 GUI
@@ -339,3 +372,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
