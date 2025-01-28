@@ -1,4 +1,4 @@
-# styles\basic\sepia_vibrant.py
+# File: styles/basic/sepia_vibrant.py
 
 import cv2
 import numpy as np
@@ -32,6 +32,16 @@ class SepiaVibrant(Style):
             "label": "Vibrance",
         },
     ]
+
+    def __init__(self):
+        # Initialize default_params from parameters
+        self.default_params = {param["name"]: param["default"] for param in self.parameters}
+
+    def define_parameters(self):
+        """
+        Returns the parameters for the Sepia Vibrant style.
+        """
+        return self.parameters
 
     def apply(self, image, params=None):
         """

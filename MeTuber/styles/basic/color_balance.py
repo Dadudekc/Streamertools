@@ -1,44 +1,83 @@
-# styles\basic\color_balance.py
+# File: styles/basic/color_balance.py
 
 import cv2
 import numpy as np
-from ..base import Style
+from MeTuber.styles.base import Style
 
 class ColorBalance(Style):
     """
-    Adjusts the color balance of the image by shifting blue, green, and red channels.
+    Adjusts the color balance of an image by modifying the blue, green, and red channels.
     """
     name = "Color Balance"
     category = "Basic"
-    parameters = [
-        {"name": "blue_shift", "type": "int", "default": 0, "min": -50, "max": 50, "step": 1, "label": "Blue Shift"},
-        {"name": "green_shift", "type": "int", "default": 0, "min": -50, "max": 50, "step": 1, "label": "Green Shift"},
-        {"name": "red_shift", "type": "int", "default": 0, "min": -50, "max": 50, "step": 1, "label": "Red Shift"},
-    ]
 
-    def apply(self, image, params=None):
+    def define_parameters(self):
         """
-        Applies color balance adjustments to the image.
+        Define parameters for color balance adjustment.
+
+        Returns:
+            list: List containing parameters for blue, green, and red shifts.
         """
-        if image is None:
+        return [
+            {
+                "name": "blue_shift",
+                "label": "Blue Shift",
+                "type": "int",
+                "min": -50,
+                "max": 50,
+                "step": 1,
+                "default": 0
+            },
+            {
+                "name": "green_shift",
+                "label": "Green Shift",
+                "type": "int",
+                "min": -50,
+                "max": 50,
+                "step": 1,
+                "default": 0
+            },
+            {
+                "name": "red_shift",
+                "label": "Red Shift",
+                "type": "int",
+                "min": -50,
+                "max": 50,
+                "step": 1,
+                "default": 0
+            }
+        ]
+
+    def apply(self, frame, params=None):
+        """
+        Adjust the color balance of the frame.
+
+        Args:
+            frame (numpy.ndarray): Input image.
+            params (dict): Dictionary containing parameters for color balance adjustment.
+
+        Returns:
+            numpy.ndarray: Color-balanced image.
+        """
+        if frame is None:
             raise ValueError("Input image cannot be None.")
+        if params is None:
+            params = {}
 
-        # Initialize params if None
-        params = params or {}
-
-        # Validate and sanitize parameters
+        # Validate and retrieve parameters
         params = self.validate_params(params)
+        blue_shift = params.get("blue_shift", 0)
+        green_shift = params.get("green_shift", 0)
+        red_shift = params.get("red_shift", 0)
 
-        # Extract channel shift values
-        blue_shift = params["blue_shift"]
-        green_shift = params["green_shift"]
-        red_shift = params["red_shift"]
+        # Split the channels
+        blue, green, red = cv2.split(frame)
 
-        # Split channels and apply shifts
-        b, g, r = cv2.split(image)
-        b = cv2.add(b, blue_shift)
-        g = cv2.add(g, green_shift)
-        r = cv2.add(r, red_shift)
+        # Adjust each channel
+        blue = np.clip(blue.astype(int) + blue_shift, 0, 255).astype(np.uint8)
+        green = np.clip(green.astype(int) + green_shift, 0, 255).astype(np.uint8)
+        red = np.clip(red.astype(int) + red_shift, 0, 255).astype(np.uint8)
 
-        # Merge channels and return the result
-        return cv2.merge([b, g, r])
+        # Merge channels back
+        balanced_frame = cv2.merge((blue, green, red))
+        return balanced_frame

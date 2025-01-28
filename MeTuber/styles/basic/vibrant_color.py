@@ -1,27 +1,34 @@
-# styles/effects/vibrant_color.py
+# MeTuber\styles\effects\vibrant_color.py
 
 import cv2
 import numpy as np
-from ..base import Style
+from styles.base import Style  # Adjust the import path as needed
+
 
 class VibrantColor(Style):
     """
     Enhances the vibrancy of colors in the image by increasing saturation.
     """
-
     name = "Vibrant Color"
     category = "Basic"
-    parameters = [
-        {
-            "name": "intensity",
-            "type": "float",
-            "default": 1.5,
-            "min": 0.5,
-            "max": 3.0,
-            "step": 0.1,
-            "label": "Intensity",
-        }
-    ]
+
+    def define_parameters(self):
+        """
+        Define parameters for the VibrantColor style.
+
+        :return: List of parameter dictionaries.
+        """
+        return [
+            {
+                "name": "intensity",
+                "type": "float",
+                "default": 1.5,
+                "min": 0.5,
+                "max": 3.0,
+                "step": 0.1,
+                "label": "Intensity",
+            }
+        ]
 
     def apply(self, image, params=None):
         """
@@ -37,14 +44,17 @@ class VibrantColor(Style):
         Raises:
             ValueError: If the input image is None or invalid.
         """
-        if image is None or not isinstance(image, np.ndarray):
+        if image is None:
             raise ValueError("Invalid image provided. Expected a NumPy array.")
-
-        # Use default parameters if none are provided
-        if params is None:
-            params = self.default_params
+        if not isinstance(image, np.ndarray):
+            raise ValueError("Invalid image provided. Expected a NumPy array.")
+        if image.dtype != np.uint8:
+            raise ValueError("Input image must have dtype of np.uint8.")
+        if image.ndim != 3 or image.shape[2] != 3:
+            raise ValueError("Input image must be a 3-channel BGR image.")
 
         # Validate and sanitize parameters
+        params = params or {}
         params = self.validate_params(params)
         intensity = params["intensity"]
 
@@ -57,9 +67,5 @@ class VibrantColor(Style):
 
         # Convert back to BGR color space
         vibrant_image = cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2BGR)
-
-        # Check if the image is modified
-        if np.array_equal(image, vibrant_image):
-            raise RuntimeError("Image was not modified. Check the vibrancy logic.")
 
         return vibrant_image

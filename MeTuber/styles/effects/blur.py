@@ -8,7 +8,7 @@ class BlurStyle(Style):
     A style that applies a Gaussian blur to the image.
     """
     name = "Blur"
-    category = "Basic Effects"
+    category = "Effects"
     parameters = [
         {"name": "kernel_size", "type": "int", "default": 5, "min": 1, "max": 31, "step": 2, "label": "Kernel Size"}
     ]

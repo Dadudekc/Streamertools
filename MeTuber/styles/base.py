@@ -1,72 +1,92 @@
-import numpy as np
+# styles/base.py
 from typing import List, Dict, Optional, Any
+from abc import ABC, abstractmethod
+import numpy as np
 
 
-class Style:
+class Style(ABC):
     """
-    Base class for all styles.
+    Abstract base class for all styles.
     """
-    name: str = "Base Style"
-    category: str = "Uncategorized"
-    parameters: List[Dict[str, Any]] = []
+    name = "BaseStyle"
+    category = "Base"
 
     def __init__(self):
-        # Initialize default parameters dynamically based on the class definition
-        self.default_params: Dict[str, Any] = {
-            param["name"]: param.get("default", None) for param in self.parameters
-        }
+        self.parameters = self.define_parameters()
 
-    def validate_params(self, params):
+    @abstractmethod
+    def define_parameters(self) -> List[Dict[str, Any]]:
         """
-        Validates and sanitizes the input parameters against the defined parameters.
-        :param params: Dictionary of input parameters.
-        :return: Validated parameter dictionary.
+        Define the parameters required for the style.
+        Must be implemented by subclasses.
         """
-        validated_params = {}
+        return []
+
+    def apply(self, frame: Optional[np.ndarray], params: Optional[Dict[str, Any]] = None) -> np.ndarray:
+        """
+        Apply the style to the given frame using the provided parameters.
+
+        Args:
+            frame (numpy.ndarray): The input video frame.
+            params (dict): Parameters for the style.
+
+        Returns:
+            numpy.ndarray: The styled video frame.
+        """
+        if frame is None or not isinstance(frame, np.ndarray):
+            raise ValueError("Invalid frame provided. Expected a NumPy array.")
+
+        # Use default parameters if params are not provided
+        params = self.validate_params(params or {})
+
+        # Default behavior is to return the original frame (no-op)
+        return frame
+
+    def validate_params(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Validate and set default values for parameters.
+
+        Args:
+            params (dict): Parameters to validate.
+
+        Returns:
+            dict: Validated parameters with defaults applied.
+        """
+        validated = {}
         for param in self.parameters:
             name = param["name"]
-            param_type = param["type"]
-            value = params.get(name, self.default_params.get(name))
+            value = params.get(name, param.get("default"))
 
-            # Ensure the parameter value respects its type and constraints
-            if param_type == "int":
-                if value < param["min"] or value > param["max"]:
-                    raise ValueError(f"Parameter '{name}' must be between {param['min']} and {param['max']}.")
-                value = int(value)
-            elif param_type == "float":
-                if value < param["min"] or value > param["max"]:
-                    raise ValueError(f"Parameter '{name}' must be between {param['min']} and {param['max']}.")
-                value = float(value)
-            elif param_type == "str":
-                if "options" in param and value not in param["options"]:
-                    raise ValueError(f"Parameter '{name}' must be one of {param['options']}.")
+            # Validate range for numeric parameters
+            if param["type"] in ["int", "float"]:
+                min_val = param.get("min", float("-inf"))
+                max_val = param.get("max", float("inf"))
+                if not (min_val <= value <= max_val):
+                    raise ValueError(
+                        f"Parameter '{name}' must be between {min_val} and {max_val}."
+                    )
 
-            validated_params[name] = value
+            # Validate options for string parameters
+            if param["type"] == "str" and "options" in param:
+                if value not in param["options"]:
+                    raise ValueError(
+                        f"Parameter '{name}' must be one of {param['options']}."
+                    )
 
-        return validated_params
-
-    def apply(self, image: Optional[np.ndarray], params: Optional[Dict[str, Any]] = None) -> np.ndarray:
-        """
-        Apply the style to the image.
-        :param image: Input BGR image.
-        :param params: Dictionary of parameters.
-        :return: Processed image.
-        """
-        if image is None or not isinstance(image, np.ndarray):
-            raise ValueError("Invalid image provided. Expected a NumPy array.")
-
-        if params is None:
-            params = {}
-        params = self.validate_params(params)
-
-        return image
+            validated[name] = value
+        return validated
 
     def describe(self) -> str:
         """
         Provide a human-readable description of the style and its parameters.
-        :return: String describing the style.
+
+        Returns:
+            str: Description of the style and its parameters.
         """
         description = f"Style: {self.name}\nCategory: {self.category}\nParameters:\n"
         for param in self.parameters:
-            description += f"  - {param['name']}: {param['type']} (Default: {param.get('default')}, Min: {param.get('min')}, Max: {param.get('max')}, Step: {param.get('step')})\n"
+            description += (
+                f"  - {param['name']}: {param['type']} "
+                f"(Default: {param.get('default')}, Min: {param.get('min')}, Max: {param.get('max')}, Step: {param.get('step')})\n"
+            )
         return description

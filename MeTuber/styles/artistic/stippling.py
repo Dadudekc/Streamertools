@@ -7,7 +7,7 @@ class Stippling(Style):
     A style that applies a stippled effect to the image.
     """
     name = "Stippling"
-    category = "Artistic Styles"
+    category = "Artistic"
     parameters = [
         {
             "name": "dot_density",
@@ -29,9 +29,19 @@ class Stippling(Style):
         }
     ]
 
+    def __init__(self):
+        # Initialize default_params from parameters
+        self.default_params = {param["name"]: param["default"] for param in self.parameters}
+
+    def define_parameters(self):
+        """
+        Returns the parameters for the Stippling style.
+        """
+        return self.parameters
+
     def apply(self, image, params=None):
         if params is None:
-            params = {}
+            params = self.default_params
         params = self.validate_params(params)
 
         dot_density = params["dot_density"]

@@ -1,8 +1,8 @@
-# styles/artistic/pencil_sketch.py
+# MeTuber\styles\artistic\pencil_sketch.py
 
 import cv2
-import numpy as np  # Ensure numpy is imported
-from styles.base import Style  # Use absolute import
+import numpy as np
+from styles.base import Style  # Adjust the import path as needed
 
 
 class PencilSketch(Style):
@@ -10,23 +10,30 @@ class PencilSketch(Style):
     A style that creates a pencil sketch effect on the image.
     """
     name = "Pencil Sketch"
-    category = "Artistic Styles"
-    parameters = [
-        {
-            "name": "blur_intensity",
-            "type": "int",
-            "default": 21,
-            "min": 1,
-            "max": 51,
-            "step": 2,
-            "label": "Blur Intensity"
-        }
-    ]
+    category = "Artistic"
+
+    def define_parameters(self):
+        """
+        Define parameters for the PencilSketch style.
+
+        :return: List of parameter dictionaries.
+        """
+        return [
+            {
+                "name": "blur_intensity",
+                "type": "int",
+                "default": 21,
+                "min": 1,
+                "max": 51,
+                "step": 2,
+                "label": "Blur Intensity"
+            }
+        ]
 
     def apply(self, image, params=None):
         """
         Apply the pencil sketch effect using the validated parameters.
-        
+
         :param image: Input BGR image as a NumPy array.
         :param params: Dictionary of parameters.
         :return: Processed image with pencil sketch effect.
@@ -36,6 +43,8 @@ class PencilSketch(Style):
             raise ValueError("Input image cannot be None.")
         if not isinstance(image, np.ndarray):
             raise ValueError("Input must be a valid NumPy array.")
+        if image.ndim != 3 or image.shape[2] != 3:
+            raise ValueError("Input must be a 3-channel BGR image.")
 
         # Initialize params as an empty dictionary if None
         params = params or {}
@@ -43,6 +52,7 @@ class PencilSketch(Style):
         # Validate and sanitize parameters
         params = self.validate_params(params)
 
+        # Extract validated blur intensity
         blur_intensity = params["blur_intensity"]
 
         # Ensure blur intensity is odd

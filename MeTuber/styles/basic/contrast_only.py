@@ -1,4 +1,4 @@
-# styles\basic\contrast_only.py
+# File: styles/basic/contrast_only.py
 
 import cv2
 from ..base import Style
@@ -22,7 +22,13 @@ class ContrastOnly(Style):
             "label": "Contrast",
         }
     ]
-        
+
+    def define_parameters(self):
+        """
+        Returns the parameter definitions for contrast adjustment.
+        """
+        return self.parameters
+
     def apply(self, image, params=None):
         """
         Adjusts the contrast of the image by scaling the alpha value.

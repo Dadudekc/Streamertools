@@ -1,33 +1,33 @@
 # styles/effects/original.py
 
-from ..base import Style
 import cv2
-import numpy as np
+from MeTuber.styles.base import Style
 
 class Original(Style):
     """
-    Original style that returns the image without any modifications.
+    The Original style applies no changes to the frame.
     """
     name = "Original"
     category = "Effects"
-    parameters = []  # No parameters
 
-    def apply(self, image, params=None):
+    def define_parameters(self):
         """
-        Returns the original image without any modifications.
-
-        Args:
-            image (numpy.ndarray): The input image in BGR format.
-            params (dict, optional): Not used.
+        The Original style has no parameters.
 
         Returns:
-            numpy.ndarray: The original image.
+            list: Empty list since there are no parameters.
         """
-        if image is None:
-            raise ValueError("Input image cannot be None.")
-        return image.copy()
+        return []
 
-# Update effects/__init__.py to include Original
-# Add the following lines:
-# from .original import Original
-# and include "Original" in __all__
+    def apply(self, frame, params):
+        """
+        Returns the frame as-is.
+
+        Args:
+            frame (numpy.ndarray): The input video frame.
+            params (dict): Parameters for the style (unused).
+
+        Returns:
+            numpy.ndarray: The original video frame.
+        """
+        return frame

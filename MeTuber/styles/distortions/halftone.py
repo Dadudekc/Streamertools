@@ -10,26 +10,31 @@ class Halftone(Style):
 
     name = "Halftone"
     category = "Distortions"
-    parameters = [
-        {
-            "name": "dot_size",
-            "type": "int",
-            "default": 5,
-            "min": 1,
-            "max": 20,
-            "step": 1,
-            "label": "Dot Size",
-        },
-        {
-            "name": "threshold",
-            "type": "int",
-            "default": 127,
-            "min": 0,
-            "max": 255,
-            "step": 5,
-            "label": "Threshold",
-        },
-    ]
+
+    def define_parameters(self):
+        """
+        Defines the parameters for the Halftone effect.
+        """
+        return [
+            {
+                "name": "dot_size",
+                "type": "int",
+                "default": 5,
+                "min": 1,
+                "max": 20,
+                "step": 1,
+                "label": "Dot Size",
+            },
+            {
+                "name": "threshold",
+                "type": "int",
+                "default": 127,
+                "min": 0,
+                "max": 255,
+                "step": 5,
+                "label": "Threshold",
+            },
+        ]
 
     def apply(self, image, params=None):
         """
@@ -48,12 +53,8 @@ class Halftone(Style):
         if image is None or not isinstance(image, np.ndarray):
             raise ValueError("Invalid image provided. Expected a NumPy array.")
 
-        # Use default parameters if none are provided
-        if params is None:
-            params = self.default_params
-
         # Validate and sanitize parameters
-        params = self.validate_params(params)
+        params = self.validate_params(params or {})
 
         dot_size = params["dot_size"]
         threshold = params["threshold"]

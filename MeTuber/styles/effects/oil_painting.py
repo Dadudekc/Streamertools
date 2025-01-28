@@ -10,7 +10,7 @@ class OilPainting(Style):
     """
 
     name = "Oil Painting"
-    category = "Effects"
+    category = "Artistic"
     parameters = [
         {
             "name": "size",

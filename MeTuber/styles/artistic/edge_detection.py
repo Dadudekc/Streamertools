@@ -6,6 +6,7 @@ class EdgeDetection(Style):
     A style that applies edge detection using the Canny method.
     """
     name = "Edge Detection"
+    category = "Artistic"
     parameters = [
         {
             "name": "threshold1",
@@ -26,6 +27,12 @@ class EdgeDetection(Style):
             "label": "Threshold 2"
         }
     ]
+
+    def define_parameters(self):
+        """
+        Returns the parameters for edge detection.
+        """
+        return self.parameters
 
     def apply(self, image, params=None):
         """
