@@ -1,3 +1,5 @@
+# File: styles/distortions/halftone.py
+
 import cv2
 import numpy as np
 from ..base import Style
@@ -10,31 +12,35 @@ class Halftone(Style):
 
     name = "Halftone"
     category = "Distortions"
+    parameters = [
+        {
+            "name": "dot_size",
+            "type": "int",
+            "default": 5,
+            "min": 1,
+            "max": 20,
+            "step": 1,
+            "label": "Dot Size",
+        },
+        {
+            "name": "threshold",
+            "type": "int",
+            "default": 127,
+            "min": 0,
+            "max": 255,
+            "step": 5,
+            "label": "Threshold",
+        },
+    ]
 
     def define_parameters(self):
         """
         Defines the parameters for the Halftone effect.
+
+        Returns:
+            list: List of parameter dictionaries for the halftone effect.
         """
-        return [
-            {
-                "name": "dot_size",
-                "type": "int",
-                "default": 5,
-                "min": 1,
-                "max": 20,
-                "step": 1,
-                "label": "Dot Size",
-            },
-            {
-                "name": "threshold",
-                "type": "int",
-                "default": 127,
-                "min": 0,
-                "max": 255,
-                "step": 5,
-                "label": "Threshold",
-            },
-        ]
+        return self.parameters
 
     def apply(self, image, params=None):
         """
@@ -50,8 +56,12 @@ class Halftone(Style):
         Raises:
             ValueError: If the input image is None or invalid.
         """
-        if image is None or not isinstance(image, np.ndarray):
+        if image is None:
+            raise ValueError("Input image cannot be None.")
+        if not isinstance(image, np.ndarray):
             raise ValueError("Invalid image provided. Expected a NumPy array.")
+        if image.ndim != 3 or image.shape[2] != 3:
+            raise ValueError("Input image must be a 3-channel BGR image.")
 
         # Validate and sanitize parameters
         params = self.validate_params(params or {})
@@ -61,12 +71,6 @@ class Halftone(Style):
 
         # Convert the image to grayscale
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-        # Handle special cases for threshold
-        if threshold == 0:
-            return np.full_like(image, 0)  # Completely black image
-        elif threshold == 255:
-            return np.full_like(image, 255)  # Completely white image
 
         # Apply binary thresholding
         _, binary = cv2.threshold(gray, threshold, 255, cv2.THRESH_BINARY)

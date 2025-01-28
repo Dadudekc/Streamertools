@@ -3,7 +3,6 @@ import numpy as np
 from styles.base import Style
 
 
-
 class Mosaic(Style):
     """
     A style that applies a mosaic effect to the image by resizing down and back up.
@@ -22,6 +21,12 @@ class Mosaic(Style):
             "label": "Tile Size",
         }
     ]
+
+    def define_parameters(self):
+        """
+        Define the parameters for the Mosaic effect.
+        """
+        return self.parameters
 
     def apply(self, image, params=None):
         """
