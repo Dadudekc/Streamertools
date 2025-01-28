@@ -3,12 +3,11 @@
     "style": "Cartoon",
     "parameters": {
         "Cartoon": {
-            "bilateral_filter_diameter": 20,
+            "bilateral_filter_diameter": 1,
             "bilateral_filter_sigmaColor": 150,
-            "bilateral_filter_sigmaSpace": 1,
-            "canny_threshold1": 44,
-            "canny_threshold2": 5,
-            "threshold1": 13
+            "bilateral_filter_sigmaSpace": 150,
+            "canny_threshold1": 0,
+            "canny_threshold2": 205
         },
         "Edge Detection": {
             "threshold1": 39,
@@ -39,14 +38,24 @@
             "sepia_intensity": 1.0,
             "vibrance": 1.0
         },
-        "Color Balance": {},
+        "Color Balance": {
+            "blue_shift": 0,
+            "green_shift": 0,
+            "red_shift": 0
+        },
         "Vibrant Color": {
             "intensity": 1.5
         },
         "Base Style": {},
-        "Bitwise AND": {},
-        "Bitwise OR": {},
-        "Bitwise XOR": {},
+        "Bitwise AND": {
+            "mask_intensity": 128
+        },
+        "Bitwise OR": {
+            "mask_intensity": 128
+        },
+        "Bitwise XOR": {
+            "mask_intensity": 128
+        },
         "Invert Colors": {
             "invert_alpha": 1.0
         },
@@ -65,12 +74,20 @@
             "leak_color": "Red",
             "leak_position": "Top Right"
         },
-        "Mosaic": {},
-        "Emboss & Contrast": {},
+        "Mosaic": {
+            "tile_size": 10
+        },
+        "Emboss & Contrast": {
+            "kernel_size": 3,
+            "scale": 1.0,
+            "contrast": 1.0
+        },
         "Black & White": {
             "threshold": 128
         },
-        "Color Quantization": {},
+        "Color Quantization": {
+            "clusters": 8
+        },
         "Watercolor": {
             "sigma_s": 60,
             "sigma_r": 0.5
@@ -85,15 +102,31 @@
             "threshold2": 200,
             "apertureSize": 3
         },
-        "Blur": {},
+        "Blur": {
+            "kernel_size": 5
+        },
         "Motion Blur": {
             "kernel_size": 15,
             "angle": 0
         },
-        "Glowing Edges": {},
-        "Negative Vintage": {},
-        "Oil Painting": {},
+        "Glowing Edges": {
+            "edge_threshold": 100,
+            "blur_size": 7
+        },
+        "Negative Vintage": {
+            "sepia_intensity": 1.0
+        },
+        "Oil Painting": {
+            "size": 7,
+            "dyn_ratio": 1.0
+        },
         "Original": {},
-        "BaseStyle": {}
+        "BaseStyle": {},
+        "Solarize": {
+            "threshold": 128
+        },
+        "Threshold": {
+            "threshold": 128
+        }
     }
 }
