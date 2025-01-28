@@ -1,5 +1,3 @@
-# MeTuber\styles\bitwise_ops.py
-
 import abc
 import cv2
 import numpy as np
