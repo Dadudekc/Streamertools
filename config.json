@@ -1,0 +1,99 @@
+{
+    "input_device": "video=C270 HD WEBCAM",
+    "style": "Cartoon",
+    "parameters": {
+        "Cartoon": {
+            "bilateral_filter_diameter": 20,
+            "bilateral_filter_sigmaColor": 150,
+            "bilateral_filter_sigmaSpace": 1,
+            "canny_threshold1": 44,
+            "canny_threshold2": 5,
+            "threshold1": 13
+        },
+        "Edge Detection": {
+            "threshold1": 39,
+            "threshold2": 85
+        },
+        "Line Art": {
+            "threshold1": 58,
+            "threshold2": 50
+        },
+        "Sketch & Color": {
+            "blur_intensity": 43,
+            "color_strength": 0.6
+        },
+        "Stippling": {
+            "dot_density": 1,
+            "contrast_adjustment": 3.0
+        },
+        "Pencil Sketch": {
+            "blur_intensity": 25
+        },
+        "Brightness Only": {
+            "brightness": 0
+        },
+        "Contrast Only": {
+            "contrast": 1.0
+        },
+        "Sepia Vibrant": {
+            "sepia_intensity": 1.0,
+            "vibrance": 1.0
+        },
+        "Color Balance": {},
+        "Vibrant Color": {
+            "intensity": 1.5
+        },
+        "Base Style": {},
+        "Bitwise AND": {},
+        "Bitwise OR": {},
+        "Bitwise XOR": {},
+        "Invert Colors": {
+            "invert_alpha": 1.0
+        },
+        "Negative": {},
+        "Invert Filter": {},
+        "Glitch": {
+            "max_shift": 10,
+            "num_shifts": 5
+        },
+        "Halftone": {
+            "dot_size": 5,
+            "threshold": 127
+        },
+        "Light Leak": {
+            "leak_intensity": 50,
+            "leak_color": "Red",
+            "leak_position": "Top Right"
+        },
+        "Mosaic": {},
+        "Emboss & Contrast": {},
+        "Black & White": {
+            "threshold": 128
+        },
+        "Color Quantization": {},
+        "Watercolor": {
+            "sigma_s": 60,
+            "sigma_r": 0.5
+        },
+        "Hough Lines": {
+            "threshold": 150,
+            "minLineLength": 100,
+            "maxLineGap": 10
+        },
+        "Canny Edge": {
+            "threshold1": 100,
+            "threshold2": 200,
+            "apertureSize": 3
+        },
+        "Blur": {},
+        "Motion Blur": {
+            "kernel_size": 15,
+            "angle": 0
+        },
+        "Glowing Edges": {},
+        "Negative Vintage": {},
+        "Oil Painting": {},
+        "Original": {},
+        "BaseStyle": {}
+    }
+}
