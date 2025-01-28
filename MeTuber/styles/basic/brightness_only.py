@@ -2,63 +2,67 @@
 
 import cv2
 import numpy as np
-from MeTuber.styles.base import Style
+from ..base import Style
+
 
 class BrightnessOnly(Style):
     """
-    Adjusts the brightness of the video frame.
+    Adjusts the brightness of the image.
     """
+
     name = "Brightness Only"
     category = "Basic"
+    parameters = [
+        {
+            "name": "brightness",
+            "type": "int",
+            "default": 0,
+            "min": -100,
+            "max": 100,
+            "step": 1,
+            "label": "Brightness",
+        }
+    ]
 
     def define_parameters(self):
         """
-        Define parameters for brightness adjustment.
-
-        Returns:
-            list: List containing brightness parameter.
+        Returns the parameter definitions for brightness adjustment.
         """
-        return [
-            {
-                "name": "brightness",
-                "label": "Brightness",
-                "type": "int",
-                "min": -100,
-                "max": 100,
-                "step": 1,
-                "default": 0
-            }
-        ]
+        return self.parameters
 
-    def apply(self, frame, params=None):
+    def apply(self, image, params=None):
         """
-        Adjust the brightness of the frame.
+        Adjusts the brightness of the image.
 
         Args:
-            frame (numpy.ndarray): The input video frame.
-            params (dict): Parameters for brightness adjustment.
+            image (numpy.ndarray): The input image in BGR format.
+            params (dict, optional): Parameters for brightness adjustment.
 
         Returns:
-            numpy.ndarray: The brightness-adjusted frame.
+            numpy.ndarray: The brightness-adjusted image.
+
+        Raises:
+            ValueError: If the input image is None or invalid.
         """
-        if frame is None:
+        if image is None:
             raise ValueError("Input image cannot be None.")
-        if params is None:
-            params = {}
 
-        brightness = params.get("brightness", 0)
+        # Initialize params to an empty dictionary if None
+        params = params or {}
 
-        # Validate brightness range
-        if not -100 <= brightness <= 100:
-            raise ValueError("Parameter 'brightness' must be between -100 and 100.")
+        # Validate and sanitize parameters
+        params = self.validate_params(params)
 
-        # Convert to HSV to adjust brightness
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        brightness = params["brightness"]
+
+        # Convert to HSV for brightness adjustment
+        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         h, s, v = cv2.split(hsv)
 
-        # Adjust brightness with clamping
+        # Apply brightness adjustment with clamping
         v = np.clip(v.astype(int) + brightness, 0, 255).astype(np.uint8)
 
-        final_hsv = cv2.merge((h, s, v))
-        frame_bright = cv2.cvtColor(final_hsv, cv2.COLOR_HSV2BGR)
-        return frame_bright
+        # Merge adjusted channels and convert back to BGR
+        adjusted = cv2.cvtColor(cv2.merge((h, s, v)), cv2.COLOR_HSV2BGR)
+
+        return adjusted
