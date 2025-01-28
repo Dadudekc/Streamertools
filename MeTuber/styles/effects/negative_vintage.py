@@ -1,5 +1,3 @@
-# styles/effects/negative_vintage.py
-
 import cv2
 import numpy as np
 from ..base import Style
@@ -22,6 +20,12 @@ class NegativeVintage(Style):
             "label": "Sepia Intensity",
         }
     ]
+
+    def define_parameters(self):
+        """
+        Define the parameters for the Negative Vintage effect.
+        """
+        return self.parameters
 
     def apply(self, image, params=None):
         """

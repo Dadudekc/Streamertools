@@ -1,5 +1,3 @@
-# styles/effects/misc/emboss_contrast.py
-
 import cv2
 import numpy as np
 from ..base import Style
@@ -41,6 +39,14 @@ class EmbossContrast(Style):
             "label": "Contrast",
         },
     ]
+
+    def define_parameters(self):
+        """
+        Define the parameters for this style.
+        Returns:
+            list: List of parameter dictionaries.
+        """
+        return self.parameters
 
     def apply(self, image, params=None):
         """

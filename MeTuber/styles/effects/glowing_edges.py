@@ -1,8 +1,7 @@
-# styles/effects/glowing_edges.py
-
 import cv2
 import numpy as np
 from ..base import Style
+
 
 class GlowingEdges(Style):
     """
@@ -31,6 +30,14 @@ class GlowingEdges(Style):
             "label": "Blur Size",
         },
     ]
+
+    def define_parameters(self):
+        """
+        Define the parameters for this style.
+        Returns:
+            list: List of parameter dictionaries.
+        """
+        return self.parameters
 
     def apply(self, image, params=None):
         """

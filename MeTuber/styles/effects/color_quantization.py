@@ -1,5 +1,3 @@
-# styles/effects/misc/color_quantization.py
-
 import cv2
 import numpy as np
 from ..base import Style
@@ -23,6 +21,12 @@ class ColorQuantization(Style):
             "label": "Clusters",
         }
     ]
+
+    def define_parameters(self):
+        """
+        Define the parameters for the Color Quantization effect.
+        """
+        return self.parameters
 
     def apply(self, image, params=None):
         """
