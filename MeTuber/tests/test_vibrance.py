@@ -1,6 +1,5 @@
-import cv2
-import numpy as np
 import pytest
+import numpy as np
 from adjustments.threshold import Threshold
 
 
@@ -11,6 +10,7 @@ def dummy_image():
 
 
 def test_threshold_default(dummy_image):
+    """Test thresholding with the default threshold."""
     threshold = Threshold()
     params = {"threshold": 128}
     result = threshold.apply(dummy_image, params)
@@ -19,6 +19,7 @@ def test_threshold_default(dummy_image):
 
 
 def test_threshold_custom(dummy_image):
+    """Test thresholding with a custom threshold."""
     threshold = Threshold()
     params = {"threshold": 200}
     result = threshold.apply(dummy_image, params)

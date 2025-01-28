@@ -1,7 +1,6 @@
 import pytest
 import numpy as np
 from styles.effects.blur_motion import BlurMotion
-from typing import Optional
 
 @pytest.fixture
 def dummy_image():
@@ -70,4 +69,4 @@ def test_blur_motion_kernel_adjustment(dummy_image):
     params = {"kernel_size": 16, "angle": 0}  # kernel_size is even
     result = blur_motion.apply(dummy_image, params)
     assert isinstance(result, np.ndarray)
-    assert result.shape == dummy_image.shape
+    assert result.shape == dummy_image.shape  # Fixed variable name

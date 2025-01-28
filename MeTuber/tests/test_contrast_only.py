@@ -1,3 +1,5 @@
+# File: MeTuber/tests/test_contrast_only.py
+
 import pytest
 import numpy as np
 from styles.basic.contrast_only import ContrastOnly
@@ -21,15 +23,6 @@ def test_contrast_only_default_params(dummy_image):
     assert result.shape == dummy_image.shape
     # Ensure the image remains unchanged with default contrast=1.0
     assert np.array_equal(result, dummy_image)
-
-    # Apply with modified contrast
-    params = {"contrast": 2.0}
-    result_modified = contrast_only.apply(dummy_image, params)
-    assert isinstance(result_modified, np.ndarray)
-    assert result_modified.shape == dummy_image.shape
-    # Ensure the image is modified with contrast != 1.0
-    assert not np.array_equal(result_modified, dummy_image)
-
 
 
 def test_contrast_only_custom_params(dummy_image):

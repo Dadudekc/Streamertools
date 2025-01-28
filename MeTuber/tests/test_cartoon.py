@@ -48,3 +48,27 @@ def test_cartoon_invalid_params(dummy_image):
         cartoon.apply(dummy_image, {"canny_threshold1": -10})
     with pytest.raises(ValueError, match="Parameter 'bilateral_filter_sigmaColor' must be between 1 and 150."):
         cartoon.apply(dummy_image, {"bilateral_filter_sigmaColor": 200})
+
+def test_cartoon_performance():
+    """
+    Test the performance of the Cartoon effect on large images.
+    """
+    cartoon = Cartoon()
+    large_image = np.ones((1080, 1920, 3), dtype=np.uint8) * 255  # Full HD white image
+
+    params = {
+        "bilateral_filter_diameter": 9,
+        "bilateral_filter_sigmaColor": 75,
+        "bilateral_filter_sigmaSpace": 75,
+        "canny_threshold1": 100,
+        "canny_threshold2": 200,
+    }
+
+    # Measure processing time
+    import time
+    start_time = time.time()
+    result = cartoon.apply(large_image, params)
+    end_time = time.time()
+
+    assert result is not None, "The cartoon effect returned None for large images."
+    assert end_time - start_time < 1.0, "Cartoon effect took too long to process a large image."
