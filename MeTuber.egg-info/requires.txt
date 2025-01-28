@@ -1,0 +1,11 @@
+opencv-python
+numpy
+PyQt5
+pyvirtualcam
+av
+pytest
+pytest-cov
+
+[dev]
+black
+flake8

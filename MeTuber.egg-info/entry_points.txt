@@ -1,0 +1,2 @@
+[console_scripts]
+metuber = MeTuber.__main__:main
