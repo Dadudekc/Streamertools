@@ -1,3 +1,5 @@
+# File: styles/artistic/line_art.py
+
 import cv2
 import numpy as np
 from styles.base import Style
@@ -9,31 +11,32 @@ class LineArt(Style):
     """
     name = "Line Art"
     category = "Artistic"
+    parameters = [
+        {
+            "name": "threshold1",
+            "type": "int",
+            "default": 50,
+            "min": 0,
+            "max": 255,
+            "step": 1,
+            "label": "Threshold 1",
+        },
+        {
+            "name": "threshold2",
+            "type": "int",
+            "default": 150,
+            "min": 0,
+            "max": 255,
+            "step": 1,
+            "label": "Threshold 2",
+        },
+    ]
 
     def define_parameters(self):
         """
-        Defines the parameters for the Line Art effect.
+        Returns the parameter definitions for the Line Art effect.
         """
-        return [
-            {
-                "name": "threshold1",
-                "type": "int",
-                "default": 50,
-                "min": 0,
-                "max": 255,
-                "step": 1,
-                "label": "Threshold 1"
-            },
-            {
-                "name": "threshold2",
-                "type": "int",
-                "default": 150,
-                "min": 0,
-                "max": 255,
-                "step": 1,
-                "label": "Threshold 2"
-            }
-        ]
+        return self.parameters
 
     def apply(self, image, params=None):
         """
@@ -45,14 +48,17 @@ class LineArt(Style):
 
         Returns:
             numpy.ndarray: Line art image.
+
+        Raises:
+            ValueError: If the input image is None or invalid.
         """
         if image is None or not isinstance(image, np.ndarray):
             raise ValueError("Input image must be a valid NumPy array.")
-        if params is None:
-            params = {}
+        if image.ndim != 3 or image.shape[2] != 3:
+            raise ValueError("Input image must be a 3-channel (BGR) image.")
 
         # Validate and sanitize parameters
-        params = self.validate_params(params)
+        params = self.validate_params(params or {})
 
         threshold1 = params["threshold1"]
         threshold2 = params["threshold2"]
@@ -66,4 +72,7 @@ class LineArt(Style):
         # Invert the edges for a line art effect
         line_art = cv2.bitwise_not(edges)
 
-        return line_art
+        # Convert single-channel line art to BGR for consistency
+        line_art_bgr = cv2.cvtColor(line_art, cv2.COLOR_GRAY2BGR)
+
+        return line_art_bgr

@@ -1,58 +1,37 @@
-# MeTuber\styles\artistic\pencil_sketch.py
-
 import cv2
 import numpy as np
-from styles.base import Style  # Adjust the import path as needed
+from styles.base import Style
 
 
 class PencilSketch(Style):
     """
-    A style that creates a pencil sketch effect on the image.
+    A style that creates a pencil sketch effect on live webcam feeds.
     """
     name = "Pencil Sketch"
     category = "Artistic"
+    parameters = [
+        {
+            "name": "blur_intensity",
+            "type": "int",
+            "default": 21,
+            "min": 1,
+            "max": 51,
+            "step": 2,
+            "label": "Blur Intensity",
+        }
+    ]
 
     def define_parameters(self):
-        """
-        Define parameters for the PencilSketch style.
-
-        :return: List of parameter dictionaries.
-        """
-        return [
-            {
-                "name": "blur_intensity",
-                "type": "int",
-                "default": 21,
-                "min": 1,
-                "max": 51,
-                "step": 2,
-                "label": "Blur Intensity"
-            }
-        ]
+        return self.parameters
 
     def apply(self, image, params=None):
-        """
-        Apply the pencil sketch effect using the validated parameters.
-
-        :param image: Input BGR image as a NumPy array.
-        :param params: Dictionary of parameters.
-        :return: Processed image with pencil sketch effect.
-        :raises ValueError: If the input image is None or invalid.
-        """
-        if image is None:
-            raise ValueError("Input image cannot be None.")
-        if not isinstance(image, np.ndarray):
-            raise ValueError("Input must be a valid NumPy array.")
+        if image is None or not isinstance(image, np.ndarray):
+            raise ValueError("Input image must be a valid NumPy array.")
         if image.ndim != 3 or image.shape[2] != 3:
             raise ValueError("Input must be a 3-channel BGR image.")
 
-        # Initialize params as an empty dictionary if None
-        params = params or {}
-
         # Validate and sanitize parameters
-        params = self.validate_params(params)
-
-        # Extract validated blur intensity
+        params = self.validate_params(params or {})
         blur_intensity = params["blur_intensity"]
 
         # Ensure blur intensity is odd
@@ -65,13 +44,59 @@ class PencilSketch(Style):
         # Invert the grayscale image
         inverted_gray = cv2.bitwise_not(gray)
 
-        # Apply Gaussian blur
+        # Apply Gaussian blur to the inverted image
         blurred = cv2.GaussianBlur(inverted_gray, (blur_intensity, blur_intensity), 0)
 
         # Invert the blurred image
         inverted_blur = cv2.bitwise_not(blurred)
 
-        # Divide gray by the inverted blur to create a sketch effect
+        # Combine the grayscale and inverted blur to create the pencil sketch effect
         sketch = cv2.divide(gray, inverted_blur, scale=256.0)
 
-        return sketch
+        # Convert single-channel sketch to BGR for compatibility with video feeds
+        sketch_bgr = cv2.cvtColor(sketch, cv2.COLOR_GRAY2BGR)
+
+        return sketch_bgr
+
+
+# Live webcam feed integration
+def process_webcam_feed():
+    """
+    Processes live webcam feed with the Pencil Sketch effect.
+    """
+    # Initialize the PencilSketch style
+    pencil_sketch = PencilSketch()
+
+    # Default parameters
+    params = {"blur_intensity": 21}
+
+    # Start webcam capture
+    cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        print("Error: Could not open webcam.")
+        return
+
+    print("Press 'q' to quit.")
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            print("Error: Could not read frame from webcam.")
+            break
+
+        # Apply the PencilSketch effect
+        sketch_frame = pencil_sketch.apply(frame, params)
+
+        # Display the processed frame
+        cv2.imshow("Pencil Sketch - Webcam", sketch_frame)
+
+        # Check for user input to quit
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            break
+
+    # Release the webcam and close all windows
+    cap.release()
+    cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    process_webcam_feed()

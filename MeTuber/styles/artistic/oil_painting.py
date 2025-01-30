@@ -21,11 +21,11 @@ class OilPainting(Style):
         },
         {
             "name": "dyn_ratio",
-            "type": "float",
-            "default": 1.0,
-            "min": 0.0,
-            "max": 2.0,
-            "step": 0.1,
+            "type": "int",  # Updated to integer to align with OpenCV's requirement
+            "default": 1,
+            "min": 0,
+            "max": 2,
+            "step": 1,
             "label": "Dyn Ratio",
         },
     ]
@@ -59,7 +59,7 @@ class OilPainting(Style):
         params = self.validate_params(params)
 
         size = params["size"]
-        dyn_ratio = params["dyn_ratio"]
+        dyn_ratio = max(1, int(params["dyn_ratio"]))  # Ensure dyn_ratio is an int >= 1
 
         # Apply oil painting effect
         try:
