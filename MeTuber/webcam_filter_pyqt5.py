@@ -14,9 +14,9 @@ import pkgutil
 import importlib
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QGroupBox,
-    QFormLayout, QSlider, QPushButton, QMessageBox, QFileDialog, QComboBox, QTabWidget
+    QFormLayout, QSlider, QPushButton, QMessageBox, QFileDialog, QComboBox, QTabWidget, QCheckBox
 )
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal, QObject
 
 # Import GUI components
 from gui_components.device_selector import DeviceSelector
@@ -28,8 +28,11 @@ from gui_components.action_buttons import ActionButtons
 from styles.base import Style
 from styles.effects.original import Original
 
+# Import the updated AdvancedCartoon class
+from styles.artistic.advanced_cartoon import AdvancedCartoon  # Updated import
+
 # Import the updated WebcamThread
-from webcam_threading import WebcamThread
+from webcam_threading import WebcamThread  # Ensure this path is correct
 
 # =============================================================================
 # 1. Config Load/Save
@@ -92,7 +95,7 @@ def list_devices():
 
 def load_styles():
     """
-    Dynamically loads all Style subclasses from the styles and adjustments packages and categorizes them.
+    Dynamically loads all Style subclasses from the styles package and categorizes them.
 
     Returns:
         tuple: 
@@ -155,7 +158,6 @@ def load_styles():
 
     return style_instances, style_categories
 
-
 # =============================================================================
 # 4. PyQt5 GUI
 # =============================================================================
@@ -193,7 +195,7 @@ class WebcamApp(QWidget):
                 validated_params = style_instance.validate_params(style_params)
             except Exception as e:
                 logging.warning(f"Invalid parameters for style '{style_name}': {e}. Resetting to defaults.")
-                validated_params = {param['name']: param['default'] for param in style_instance.define_parameters()}
+                validated_params = {param['name']: param.get("default", 0) for param in style_instance.define_parameters()}
             self.settings["parameters"][style_name] = validated_params
         save_settings(self.settings)
 
@@ -243,12 +245,12 @@ class WebcamApp(QWidget):
 
         if self.current_style:
             logging.info(f"Updating parameters for style: {selected_style_name}")
-            
+
             # Ensure all parameters have default values if missing
             for param in self.current_style.define_parameters():
                 if param["name"] not in self.current_style_params:
                     self.current_style_params[param["name"]] = param.get("default", 0)
-            
+
             self.parameter_controls.update_parameters(
                 self.current_style.define_parameters(),
                 self.current_style_params,
@@ -257,20 +259,48 @@ class WebcamApp(QWidget):
         else:
             logging.warning(f"No style found for: {selected_style_name}")
 
-    def on_param_changed(self, param_name, value, label_widget):
+    def on_param_changed(self, param_name, value, widget):
         """
-        Update the parameter in real-time and pass it to the running thread
-        so the style changes reflect immediately.
+        Handles parameter changes from the UI controls.
+
+        Args:
+            param_name (str): The name of the parameter.
+            value (int, float, str, bool): The new value of the parameter.
+            widget (QWidget): The widget that triggered the change.
         """
         self.current_style_params[param_name] = value
-        label_widget.setText(f"{value}" if isinstance(value, int) else f"{value:.1f}")
-
-        # Save the updated parameter
         selected_style_name = self.style_tab_manager.get_current_style()
         if "parameters" not in self.settings:
             self.settings["parameters"] = {}
         self.settings["parameters"][selected_style_name] = self.current_style_params
         save_settings(self.settings)
+
+        if isinstance(widget, QLabel):
+            # Update the label text for slider controls
+            try:
+                if isinstance(value, int):
+                    widget.setText(f"{value}")
+                elif isinstance(value, float):
+                    widget.setText(f"{value:.1f}")
+                else:
+                    widget.setText(str(value))
+                logging.debug(f"Updated label for '{param_name}' to '{value}'")
+            except Exception as e:
+                logging.error(f"Failed to update label for '{param_name}': {e}")
+        elif isinstance(widget, QComboBox):
+            # Handle combo box changes if needed
+            logging.debug(f"ComboBox '{param_name}' changed to '{value}'")
+            # If you need to perform additional actions based on combo box changes,
+            # add them here.
+            pass
+        elif isinstance(widget, QCheckBox):
+            # Handle checkbox changes if needed
+            logging.debug(f"Checkbox '{param_name}' changed to '{value}'")
+            # If you need to perform additional actions based on checkbox changes,
+            # add them here.
+            pass
+        else:
+            logging.warning(f"Unhandled widget type: {type(widget)} for parameter: {param_name}")
 
         # If the thread is running, update parameters on the fly
         if self.thread and self.thread.isRunning():
@@ -298,7 +328,11 @@ class WebcamApp(QWidget):
         save_settings(self.settings)
 
         # Initialize and start the thread
-        self.thread = WebcamThread(input_device, self.current_style, dict(self.current_style_params))
+        self.thread = WebcamThread(
+            input_device=input_device,
+            style_instance=self.style_instances[selected_style],
+            style_params=dict(self.current_style_params)  # Pass a copy
+        )
         self.thread.error_signal.connect(self.display_error)
         self.thread.info_signal.connect(self.display_info)
         self.thread.start()
@@ -354,6 +388,10 @@ class WebcamApp(QWidget):
             logging.info("Application closed. WebcamThread stopped.")
         event.accept()
 
+# =============================================================================
+# 5. Main Function - App Entry Point
+# =============================================================================
+
 def main():
     # Setup logging
     logging.basicConfig(
@@ -372,4 +410,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
