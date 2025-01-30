@@ -1,5 +1,3 @@
-# File: styles/distortions/halftone.py
-
 import cv2
 import numpy as np
 from ..base import Style
@@ -75,13 +73,12 @@ class Halftone(Style):
         # Apply binary thresholding
         _, binary = cv2.threshold(gray, threshold, 255, cv2.THRESH_BINARY)
 
-        # Create an empty canvas for the halftone effect
-        halftone = np.full_like(image, 255)  # White background
+        # Create an empty white canvas
+        halftone = np.full_like(image, 255)
 
-        # Draw dots for black pixels in the binary image
-        for y in range(0, binary.shape[0], dot_size * 2):
-            for x in range(0, binary.shape[1], dot_size * 2):
-                if binary[y, x] == 0:  # Black pixel in binary image
-                    cv2.circle(halftone, (x, y), dot_size, (0, 0, 0), -1)
+        # Optimized halftone pattern drawing
+        y_indices, x_indices = np.where(binary == 0)  # Find black pixels
+        for y, x in zip(y_indices[::dot_size * 2], x_indices[::dot_size * 2]):
+            cv2.circle(halftone, (x, y), dot_size, (0, 0, 0), -1)
 
         return halftone
