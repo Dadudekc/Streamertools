@@ -1,60 +1,63 @@
 {
     "input_device": "video=C270 HD WEBCAM",
-    "style": "Cartoon",
+    "style": "Advanced Cartoon",
     "parameters": {
         "Cartoon": {
             "bilateral_filter_diameter": 1,
-            "bilateral_filter_sigmaColor": 150,
-            "bilateral_filter_sigmaSpace": 150,
-            "canny_threshold1": 0,
-            "canny_threshold2": 205
+            "bilateral_filter_sigmaColor": 11,
+            "bilateral_filter_sigmaSpace": 1,
+            "edge_method": "Canny",
+            "edge_threshold1": 58,
+            "edge_threshold2": 47,
+            "enable_color_quantization": false,
+            "color_clusters": 2
         },
         "Edge Detection": {
-            "threshold1": 39,
-            "threshold2": 85
+            "threshold1": 24,
+            "threshold2": 45
         },
         "Line Art": {
-            "threshold1": 58,
-            "threshold2": 50
+            "threshold1": 64,
+            "threshold2": 71
         },
         "Sketch & Color": {
-            "blur_intensity": 43,
-            "color_strength": 0.6
+            "blur_intensity": 50,
+            "color_strength": 0.0
         },
         "Stippling": {
             "dot_density": 1,
-            "contrast_adjustment": 3.0
+            "contrast_adjustment": 1.2
         },
         "Pencil Sketch": {
-            "blur_intensity": 25
+            "blur_intensity": 19
         },
         "Brightness Only": {
-            "brightness": 0
+            "brightness": -100
         },
         "Contrast Only": {
-            "contrast": 1.0
+            "contrast": 0.9
         },
         "Sepia Vibrant": {
-            "sepia_intensity": 1.0,
-            "vibrance": 1.0
+            "sepia_intensity": 0.4,
+            "vibrance": 0.0
         },
         "Color Balance": {
-            "blue_shift": 0,
-            "green_shift": 0,
-            "red_shift": 0
+            "blue_shift": -38,
+            "green_shift": 1,
+            "red_shift": -3
         },
         "Vibrant Color": {
-            "intensity": 1.5
+            "intensity": 3.0
         },
         "Base Style": {},
         "Bitwise AND": {
-            "mask_intensity": 128
+            "mask_intensity": 216
         },
         "Bitwise OR": {
-            "mask_intensity": 128
+            "mask_intensity": 132
         },
         "Bitwise XOR": {
-            "mask_intensity": 128
+            "mask_intensity": 0
         },
         "Invert Colors": {
             "invert_alpha": 1.0
@@ -62,20 +65,20 @@
         "Negative": {},
         "Invert Filter": {},
         "Glitch": {
-            "max_shift": 10,
-            "num_shifts": 5
+            "max_shift": 50,
+            "num_shifts": 20
         },
         "Halftone": {
-            "dot_size": 5,
-            "threshold": 127
+            "dot_size": 2,
+            "threshold": 18
         },
         "Light Leak": {
-            "leak_intensity": 50,
+            "leak_intensity": 3,
             "leak_color": "Red",
             "leak_position": "Top Right"
         },
         "Mosaic": {
-            "tile_size": 10
+            "tile_size": 16
         },
         "Emboss & Contrast": {
             "kernel_size": 3,
@@ -103,7 +106,7 @@
             "apertureSize": 3
         },
         "Blur": {
-            "kernel_size": 5
+            "kernel_size": 31
         },
         "Motion Blur": {
             "kernel_size": 15,
@@ -117,16 +120,59 @@
             "sepia_intensity": 1.0
         },
         "Oil Painting": {
-            "size": 7,
-            "dyn_ratio": 1.0
+            "size": 11,
+            "dyn_ratio": 1
         },
         "Original": {},
         "BaseStyle": {},
         "Solarize": {
-            "threshold": 128
+            "threshold": 0
         },
         "Threshold": {
-            "threshold": 128
+            "threshold": 49
+        },
+        "Advanced Cartoon": {
+            "bilateral_filter_diameter": 1,
+            "bilateral_filter_sigmaColor": 29,
+            "bilateral_filter_sigmaSpace": 11,
+            "edge_method": "Canny",
+            "edge_threshold1": 52,
+            "edge_threshold2": 42,
+            "sharpen_intensity": 3.0,
+            "enable_color_quantization": true,
+            "color_clusters": 11,
+            "enable_dynamic_lighting": false,
+            "enable_texture_overlay": false,
+            "texture_path": "texture.png",
+            "texture_alpha": 0.0,
+            "custom_color_palette": false,
+            "color_palette": "vibrant",
+            "enable_ai_optimization": false
+        },
+        "Advanced Halftone": {
+            "dot_size": 30,
+            "threshold": 255,
+            "dot_intensity": 1.5,
+            "blend_original": true
+        },
+        "Advanced Edge Detection": {
+            "method": "Canny",
+            "threshold1": 34,
+            "threshold2": 39,
+            "sobel_ksize": 7,
+            "blur": 9,
+            "overlay": false,
+            "glow": true,
+            "glow_intensity": 1.0,
+            "color_mode": "Red",
+            "custom_r": 38,
+            "custom_g": 255,
+            "custom_b": 73
+        },
+        "Advanced Pencil Sketch": {
+            "blur_intensity": 48,
+            "stroke_thickness": 1,
+            "detail_preservation": 0.1
         }
     }
 }
