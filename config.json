@@ -1,35 +1,35 @@
 {
     "input_device": "video=C270 HD WEBCAM",
-    "style": "Advanced Cartoon",
+    "style": "Original",
     "parameters": {
         "Cartoon": {
             "bilateral_filter_diameter": 1,
-            "bilateral_filter_sigmaColor": 11,
+            "bilateral_filter_sigmaColor": 1,
             "bilateral_filter_sigmaSpace": 1,
             "edge_method": "Canny",
-            "edge_threshold1": 58,
-            "edge_threshold2": 47,
-            "enable_color_quantization": false,
-            "color_clusters": 2
+            "edge_threshold1": 65,
+            "edge_threshold2": 58,
+            "enable_color_quantization": true,
+            "color_clusters": 14
         },
         "Edge Detection": {
-            "threshold1": 24,
-            "threshold2": 45
+            "threshold1": 54,
+            "threshold2": 63
         },
         "Line Art": {
-            "threshold1": 64,
-            "threshold2": 71
+            "threshold1": 66,
+            "threshold2": 38
         },
         "Sketch & Color": {
-            "blur_intensity": 50,
-            "color_strength": 0.0
+            "blur_intensity": 49,
+            "color_strength": 0.4
         },
         "Stippling": {
             "dot_density": 1,
-            "contrast_adjustment": 1.2
+            "contrast_adjustment": 1.4
         },
         "Pencil Sketch": {
-            "blur_intensity": 19
+            "blur_intensity": 18
         },
         "Brightness Only": {
             "brightness": -100
@@ -82,18 +82,18 @@
         },
         "Emboss & Contrast": {
             "kernel_size": 3,
-            "scale": 1.0,
-            "contrast": 1.0
+            "scale": 0.5,
+            "contrast": 0.5
         },
         "Black & White": {
-            "threshold": 128
+            "threshold": 48
         },
         "Color Quantization": {
             "clusters": 8
         },
         "Watercolor": {
-            "sigma_s": 60,
-            "sigma_r": 0.5
+            "sigma_s": 10,
+            "sigma_r": 0.1
         },
         "Hough Lines": {
             "threshold": 150,
@@ -102,22 +102,22 @@
         },
         "Canny Edge": {
             "threshold1": 100,
-            "threshold2": 200,
+            "threshold2": 50,
             "apertureSize": 3
         },
         "Blur": {
-            "kernel_size": 31
+            "kernel_size": 3
         },
         "Motion Blur": {
             "kernel_size": 15,
-            "angle": 0
+            "angle": 106
         },
         "Glowing Edges": {
             "edge_threshold": 100,
             "blur_size": 7
         },
         "Negative Vintage": {
-            "sepia_intensity": 1.0
+            "sepia_intensity": 0.6
         },
         "Oil Painting": {
             "size": 11,
@@ -129,23 +129,23 @@
             "threshold": 0
         },
         "Threshold": {
-            "threshold": 49
+            "threshold": 0
         },
         "Advanced Cartoon": {
-            "bilateral_filter_diameter": 1,
-            "bilateral_filter_sigmaColor": 29,
-            "bilateral_filter_sigmaSpace": 11,
+            "bilateral_filter_diameter": 7,
+            "bilateral_filter_sigmaColor": 2,
+            "bilateral_filter_sigmaSpace": 46,
             "edge_method": "Canny",
-            "edge_threshold1": 52,
-            "edge_threshold2": 42,
-            "sharpen_intensity": 3.0,
+            "edge_threshold1": 73,
+            "edge_threshold2": 74,
+            "sharpen_intensity": 2.0,
             "enable_color_quantization": true,
-            "color_clusters": 11,
+            "color_clusters": 15,
             "enable_dynamic_lighting": false,
             "enable_texture_overlay": false,
             "texture_path": "texture.png",
-            "texture_alpha": 0.0,
-            "custom_color_palette": false,
+            "texture_alpha": 1.0,
+            "custom_color_palette": true,
             "color_palette": "vibrant",
             "enable_ai_optimization": false
         },
@@ -157,21 +157,21 @@
         },
         "Advanced Edge Detection": {
             "method": "Canny",
-            "threshold1": 34,
-            "threshold2": 39,
-            "sobel_ksize": 7,
-            "blur": 9,
+            "threshold1": 73,
+            "threshold2": 125,
+            "sobel_ksize": 1,
+            "blur": 1,
             "overlay": false,
-            "glow": true,
-            "glow_intensity": 1.0,
-            "color_mode": "Red",
+            "glow": false,
+            "glow_intensity": 0.1,
+            "color_mode": "White",
             "custom_r": 38,
             "custom_g": 255,
             "custom_b": 73
         },
         "Advanced Pencil Sketch": {
-            "blur_intensity": 48,
-            "stroke_thickness": 1,
+            "blur_intensity": 51,
+            "stroke_thickness": 2,
             "detail_preservation": 0.1
         }
     }
