@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from adjustments.threshold import Threshold
+from styles.adjustments.threshold import Threshold
 
 
 @pytest.fixture

@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from MeTuber.styles.base import Style  # Absolute import
+from styles.base import Style  # Absolute import
 
 
 class Watercolor(Style):

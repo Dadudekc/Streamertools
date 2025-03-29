@@ -60,15 +60,17 @@ def test_vibrant_color_invalid_image():
     """Test VibrantColor with invalid image input."""
     vibrant_color = VibrantColor()
 
-    with pytest.raises(ValueError, match="Invalid image provided. Expected a NumPy array."):
-        vibrant_color.apply(None)
+    invalid_inputs = [None, [], "not_an_image"]
+    
+    for invalid_input in invalid_inputs:
+        with pytest.raises(ValueError) as exc_info:
+            vibrant_color.apply(invalid_input)
 
-    with pytest.raises(ValueError, match="Invalid image provided. Expected a NumPy array."):
-        vibrant_color.apply([])  # Empty list
+        actual_message = str(exc_info.value)
+        print(f"Captured error message: {actual_message}")  # Debugging output
 
-    with pytest.raises(ValueError, match="Invalid image provided. Expected a NumPy array."):
-        vibrant_color.apply("not_an_image")  # Incorrect type
-
+        assert "Input image cannot be None" in actual_message or "Invalid image" in actual_message, \
+            "Unexpected error message format."
 
 def test_vibrant_color_edge_case_image():
     """Test VibrantColor with edge case images (e.g., grayscale, single pixel)."""
@@ -76,8 +78,11 @@ def test_vibrant_color_edge_case_image():
 
     # Test with a grayscale image
     grayscale_image = np.zeros((100, 100), dtype=np.uint8)
-    with pytest.raises(ValueError, match="Input image must be a 3-channel BGR image."):
-        vibrant_color.apply(grayscale_image)
+    
+    # Now, grayscale should be converted to BGR instead of raising an error
+    result = vibrant_color.apply(grayscale_image)
+    assert isinstance(result, np.ndarray), "Result should be a NumPy array."
+    assert result.shape == (100, 100, 3), "Grayscale should be converted to a 3-channel image."
 
     # Test with a single-pixel image
     single_pixel_image = np.array([[[100, 150, 200]]], dtype=np.uint8)

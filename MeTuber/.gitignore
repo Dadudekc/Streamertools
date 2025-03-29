@@ -159,3 +159,13 @@ Thumbs.db
 # Logs and databases
 *.sqlite3
 *.db
+# Ignore logs
+*.log
+
+# Ignore Python egg-info metadata
+MeTuber.egg-info/
+
+# Ignore compiled Python files
+__pycache__/
+*.pyc
+*.pyo

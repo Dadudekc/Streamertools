@@ -1,5 +1,3 @@
-# File: styles/basic/vibrant_color.py
-
 import cv2
 import numpy as np
 from ..base import Style
@@ -46,6 +44,15 @@ class VibrantColor(Style):
         """
         if image is None:
             raise ValueError("Input image cannot be None.")
+
+        if not isinstance(image, np.ndarray):
+            raise ValueError("Invalid image format. Expected a NumPy array.")
+
+        if len(image.shape) == 2:  # Convert grayscale to BGR
+            image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+
+        if image.shape[-1] != 3:
+            raise ValueError("Input image must be a 3-channel BGR image.")
 
         # Initialize params to an empty dictionary if None
         params = params or {}

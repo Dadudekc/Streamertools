@@ -1,7 +1,7 @@
 # styles/effects/original.py
 
 import cv2
-from MeTuber.styles.base import Style
+from styles.base import Style
 
 class Original(Style):
     """

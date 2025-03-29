@@ -24,12 +24,14 @@ from gui_components.style_tab_manager import StyleTabManager
 from gui_components.parameter_controls import ParameterControls
 from gui_components.action_buttons import ActionButtons
 
-# Import the Style base class and Original style
+# Import the Style base class and one fallback style
 from styles.base import Style
 from styles.effects.original import Original
 
-# Import the updated AdvancedCartoon class
-from styles.artistic.advanced_cartoon import AdvancedCartoon  # Updated import
+# Import the updated classes
+# Make sure these files actually exist in your styles/artistic/ folder!
+from styles.artistic.advanced_cartoon import AdvancedCartoon      # Updated import
+from styles.artistic.advanced_cartoon2 import AdvancedCartoonAnime # Updated import
 
 # Import the updated WebcamThread
 from webcam_threading import WebcamThread  # Ensure this path is correct
@@ -43,7 +45,7 @@ CONFIG_FILE = "config.json"
 def load_settings():
     """Load settings from a JSON file if it exists; otherwise use defaults."""
     default_settings = {
-        "input_device": "video=C270 HD WEBCAM",  # Default from your working snippet
+        "input_device": "video=C270 HD WEBCAM",  # Example default
         "style": "Original",
         "parameters": {}
     }
@@ -71,14 +73,14 @@ def save_settings(settings):
 def list_devices():
     """
     List DirectShow devices on Windows using FFmpeg.
-    Returns a list of fully qualified device names, e.g. ["video=C270 HD WEBCAM", "video=OBS Virtual Camera"].
+    Returns a list of fully qualified device names, e.g. ["video=C270 HD WEBCAM", ...].
     """
     devices = []
     cmd = ['ffmpeg', '-list_devices', 'true', '-f', 'dshow', '-i', 'dummy']
     try:
         output = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode('utf-8', errors='ignore')
         for line in output.splitlines():
-            line = line.strip()  # Remove leading/trailing spaces
+            line = line.strip()
             if line.startswith("[dshow") and '"' in line:
                 start_idx = line.find('"')
                 end_idx = line.rfind('"')
@@ -100,7 +102,7 @@ def load_styles():
     Returns:
         tuple: 
             - A dictionary of style instances keyed by their names.
-            - A dictionary of categories with lists of unique style names.
+            - A dictionary of categories with lists of style names.
     """
     style_instances = {}
     style_categories = {}
@@ -108,7 +110,7 @@ def load_styles():
     # List of all style-related packages to scan
     packages_to_scan = ['styles']
 
-    seen_classes = set()  # Track loaded classes to prevent duplicates
+    seen_classes = set()
 
     for pkg_name in packages_to_scan:
         logging.debug(f"Scanning package: {pkg_name}")
@@ -116,11 +118,11 @@ def load_styles():
             package = importlib.import_module(pkg_name)
         except ImportError as e:
             logging.error(f"Error loading package {pkg_name}: {e}")
-            continue  # Skip this package and move to the next
+            continue
 
         for _, modname, ispkg in pkgutil.walk_packages(package.__path__, package.__name__ + "."):
             if ispkg:
-                continue  # Skip sub-packages
+                continue
 
             logging.debug(f"Found module: {modname}")
             try:
@@ -128,27 +130,27 @@ def load_styles():
 
                 for cls_name in dir(module):
                     cls = getattr(module, cls_name)
-
                     if (
                         inspect.isclass(cls) and
                         issubclass(cls, Style) and
                         cls is not Style and
                         not inspect.isabstract(cls) and
-                        cls not in seen_classes  # Prevent duplicate entries
+                        cls not in seen_classes
                     ):
                         try:
-                            instance = cls()  # Attempt to instantiate
+                            instance = cls()  # Instantiate
                             seen_classes.add(cls)
 
                             category = getattr(instance, "category", "Uncategorized")
                             if category not in style_categories:
                                 style_categories[category] = []
 
-                            if instance.name not in style_categories[category]:  # Avoid duplicate names
+                            # Avoid duplicate style names in the same category
+                            if instance.name not in style_categories[category]:
                                 style_categories[category].append(instance.name)
 
                             style_instances[instance.name] = instance
-                            logging.info(f"Loaded style: {instance.name} under category: {category}")
+                            logging.info(f"Loaded style: {instance.name} (Category: {category})")
 
                         except Exception as instantiation_error:
                             logging.error(f"Failed to instantiate style '{cls.__name__}': {instantiation_error}")
@@ -188,47 +190,57 @@ class WebcamApp(QWidget):
         self.init_ui()
 
     def validate_and_load_settings(self):
-        """Validate and load settings, resetting invalid parameters."""
+        """Validate and load settings, resetting invalid parameters as needed."""
         for style_name, style_instance in self.style_instances.items():
             style_params = self.settings.get("parameters", {}).get(style_name, {})
             try:
                 validated_params = style_instance.validate_params(style_params)
             except Exception as e:
                 logging.warning(f"Invalid parameters for style '{style_name}': {e}. Resetting to defaults.")
-                validated_params = {param['name']: param.get("default", 0) for param in style_instance.define_parameters()}
+                validated_params = {
+                    param['name']: param.get("default", 0)
+                    for param in style_instance.define_parameters()
+                }
             self.settings["parameters"][style_name] = validated_params
         save_settings(self.settings)
 
     def init_ui(self):
         layout = QVBoxLayout()
 
-        # 5.1 Device Selector
+        # 1) Device Selector
         devices = list_devices() or ["Enter device manually..."]
         default_device = self.settings.get("input_device", devices[0] if devices else "")
         device_selector = DeviceSelector(self, devices, default_device)
         layout.addLayout(device_selector.create())
         self.device_combo = device_selector.device_combo
 
-        # 5.2 Style Selector with Categories
+        # 2) Style Selector with Categories
         style_tab_manager = StyleTabManager(self, self.style_categories, self.style_instances, self.settings)
         layout.addWidget(style_tab_manager)
         self.style_tab_manager = style_tab_manager
 
-        # Connect style change to parameter update via the new signal
+        # Connect style change to parameter update
         style_tab_manager.style_changed.connect(self.update_parameter_controls)
 
-        # 5.3 Parameter Controls
+        # 3) Parameter Controls
         self.parameter_controls = ParameterControls(self)
         layout.addWidget(self.parameter_controls)
-        # Initialize parameters based on the selected style
+
+        # Initialize parameters for whichever style is currently selected
         self.update_parameter_controls()
 
-        # 5.4 Action Buttons
+        # 4) Action Buttons
         action_buttons = ActionButtons(self)
-        layout.addLayout(action_buttons.create(self.start_virtual_camera, self.stop_virtual_camera, self.take_snapshot))
-        self.action_buttons = action_buttons  # Store reference for enabling/disabling
+        layout.addLayout(
+            action_buttons.create(
+                start_callback=self.start_virtual_camera,
+                stop_callback=self.stop_virtual_camera,
+                snapshot_callback=self.take_snapshot
+            )
+        )
+        self.action_buttons = action_buttons
 
-        # 5.5 Status Display
+        # 5) Status Display
         self.status_label = QLabel("Status: Idle")
         self.status_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.status_label)
@@ -275,8 +287,8 @@ class WebcamApp(QWidget):
         self.settings["parameters"][selected_style_name] = self.current_style_params
         save_settings(self.settings)
 
+        # Update label text for sliders/combos/checkboxes
         if isinstance(widget, QLabel):
-            # Update the label text for slider controls
             try:
                 if isinstance(value, int):
                     widget.setText(f"{value}")
@@ -284,25 +296,16 @@ class WebcamApp(QWidget):
                     widget.setText(f"{value:.1f}")
                 else:
                     widget.setText(str(value))
-                logging.debug(f"Updated label for '{param_name}' to '{value}'")
             except Exception as e:
                 logging.error(f"Failed to update label for '{param_name}': {e}")
         elif isinstance(widget, QComboBox):
-            # Handle combo box changes if needed
             logging.debug(f"ComboBox '{param_name}' changed to '{value}'")
-            # If you need to perform additional actions based on combo box changes,
-            # add them here.
-            pass
         elif isinstance(widget, QCheckBox):
-            # Handle checkbox changes if needed
             logging.debug(f"Checkbox '{param_name}' changed to '{value}'")
-            # If you need to perform additional actions based on checkbox changes,
-            # add them here.
-            pass
         else:
-            logging.warning(f"Unhandled widget type: {type(widget)} for parameter: {param_name}")
+            logging.debug(f"Parameter '{param_name}' updated to {value} (widget={type(widget)})")
 
-        # If the thread is running, update parameters on the fly
+        # If the webcam thread is running, update parameters on the fly
         if self.thread and self.thread.isRunning():
             self.thread.update_params(dict(self.current_style_params))
 
@@ -331,7 +334,7 @@ class WebcamApp(QWidget):
         self.thread = WebcamThread(
             input_device=input_device,
             style_instance=self.style_instances[selected_style],
-            style_params=dict(self.current_style_params)  # Pass a copy
+            style_params=dict(self.current_style_params)
         )
         self.thread.error_signal.connect(self.display_error)
         self.thread.info_signal.connect(self.display_info)
@@ -358,9 +361,7 @@ class WebcamApp(QWidget):
         self.action_buttons.snapshot_button.setEnabled(False)
 
     def take_snapshot(self):
-        """
-        Capture the last processed frame and let the user save it.
-        """
+        """Capture the last processed frame and let the user save it."""
         if not self.thread or self.thread.last_frame is None:
             QMessageBox.information(self, "Snapshot", "No frame available to save.")
             return
@@ -395,7 +396,7 @@ class WebcamApp(QWidget):
 def main():
     # Setup logging
     logging.basicConfig(
-        level=logging.DEBUG,  # Set to DEBUG for detailed logging
+        level=logging.DEBUG,
         format='%(asctime)s - %(levelname)s - %(message)s',
         handlers=[
             logging.FileHandler("webcam_app.log"),

@@ -6,8 +6,8 @@ from ..basic.sepia_vibrant import SepiaVibrant
 from .emboss_contrast import EmbossContrast
 from .black_white import BlackWhite
 from .color_quantization import ColorQuantization
-from MeTuber.styles.artistic.watercolor import Watercolor
-from MeTuber.styles.effects.lines import HoughLines, CannyEdge
+from styles.artistic.watercolor import Watercolor
+from styles.effects.lines import HoughLines, CannyEdge
 # Import other effects as needed
 
 __all__ = [

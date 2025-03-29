@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import pytest
-from adjustments.solarize import Solarize
+from styles.adjustments.solarize import Solarize
 
 
 @pytest.fixture
