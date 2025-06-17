@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="MeTuber",
-    version="1.0.0",
+    version="1.0.1",
     description="A Python-based library for webcam threading and artistic effects.",
     author="Your Name",
     author_email="your.email@example.com",
