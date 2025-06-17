@@ -3,12 +3,12 @@ import numpy as np
 from ..base import Style
 
 
-class Halftone(Style):
+class AdvancedHalftone(Style):
     """
     Applies a halftone effect to the image with adjustable dot size and threshold.
     """
 
-    name = "Halftone"
+    name = "Advanced Halftone"
     category = "Distortions"
     parameters = [
         {

@@ -12,7 +12,35 @@ class Style(ABC):
     category = "Base"
 
     def __init__(self):
-        self.parameters = self.define_parameters()
+        # Initialize and normalize parameter definitions
+        params = self.define_parameters()
+        # Normalize dict return (name->props) into list of param dicts
+        if isinstance(params, dict):
+            normalized = []
+            for name, props in params.items():
+                # Copy props and include name
+                prop = dict(props)
+                prop['name'] = name
+                # Infer type if not provided
+                if 'type' not in prop:
+                    default = prop.get('default')
+                    if isinstance(default, bool):
+                        prop['type'] = 'bool'
+                    elif isinstance(default, (int,)) and not isinstance(default, bool):
+                        prop['type'] = 'int'
+                    elif isinstance(default, float):
+                        prop['type'] = 'float'
+                    else:
+                        prop['type'] = 'str'
+                # Assign a default step if not provided
+                if 'step' not in prop:
+                    prop['step'] = 1 if prop['type'] == 'int' else 0.1
+                normalized.append(prop)
+            self.parameters = normalized
+        elif isinstance(params, list):
+            self.parameters = params
+        else:
+            raise TypeError(f"define_parameters must return a dict or list, got {type(params)}")
 
     @abstractmethod
     def define_parameters(self) -> List[Dict[str, Any]]:

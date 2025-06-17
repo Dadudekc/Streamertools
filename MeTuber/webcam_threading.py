@@ -45,6 +45,11 @@ class WebcamThread(QThread):
                 self.CameraError = CameraError
             except ImportError:
                 self.CameraError = Exception  # Fallback to generic Exception
+        # Detect PyAV AVError exception class if available
+        try:
+            self.AVError = av.AVError
+        except AttributeError:
+            self.AVError = Exception
 
     def run(self):
         """
@@ -55,72 +60,68 @@ class WebcamThread(QThread):
         self.info_signal.emit("Webcam thread started.")
 
         container = None
+        cap = None
+        use_opencv = False
 
         try:
-            # 1. Open the device with PyAV
+            # Attempt PyAV backend first
             try:
                 container = av.open(self.input_device, format="dshow")
-                self.logger.info(f"Opened input device: {self.input_device}")
-                self.info_signal.emit(f"Opened input device: {self.input_device}")
-            except av.AVError as e:
-                error_msg = f"Error opening webcam with PyAV: {e}"
-                self.logger.error(error_msg)
-                self.error_signal.emit(error_msg)
-                return
+                self.logger.info(f"Using PyAV backend: {self.input_device}")
+                self.info_signal.emit(f"Using PyAV backend: {self.input_device}")
+            except self.AVError as e:
+                self.logger.warning(f"PyAV failed ({e}), falling back to OpenCV capture.")
+                self.info_signal.emit("Falling back to OpenCV capture.")
+                use_opencv = True
 
-            # 2. Start a pyvirtualcam Camera
-            try:
-                # Fetch default camera properties or set custom ones
-                # Here, using 640x480 at 30 FPS as an example
-                with pyvirtualcam.Camera(width=640, height=480, fps=30, fmt=pyvirtualcam.PixelFormat.BGR) as cam:
-                    self.logger.info(f"Opened virtual camera: {cam.device}")
-                    self.info_signal.emit(f"Opened virtual camera: {cam.device}")
-                    for frame in container.decode(video=0):
-                        if not self._is_running:
-                            self.logger.info("WebcamThread stopping as requested.")
-                            self.info_signal.emit("Webcam thread stopping.")
-                            break
-
-                        try:
-                            # Convert PyAV frame to NumPy array (BGR24)
+            if not use_opencv:
+                # PyAV + pyvirtualcam loop
+                try:
+                    with pyvirtualcam.Camera(width=640, height=480, fps=30, fmt=pyvirtualcam.PixelFormat.BGR) as cam:
+                        self.logger.info(f"Opened virtual camera: {cam.device}")
+                        self.info_signal.emit(f"Virtual camera: {cam.device}")
+                        for frame in container.decode(video=0):
+                            if not self._is_running:
+                                break
                             img = frame.to_ndarray(format="bgr24")
-
-                            # Apply the selected style
-                            processed_frame = self.style_instance.apply(img, self.style_params)
-
-                            # Ensure processed_frame is in BGR format
-                            if len(processed_frame.shape) == 2:
-                                processed_frame = cv2.cvtColor(processed_frame, cv2.COLOR_GRAY2BGR)
-
-                            # Resize to match virtual camera resolution
-                            resized_frame = cv2.resize(processed_frame, (cam.width, cam.height))
-
-                            # Send frame to virtual camera
-                            cam.send(resized_frame)
+                            processed = self.style_instance.apply(img, self.style_params)
+                            if processed.ndim == 2:
+                                processed = cv2.cvtColor(processed, cv2.COLOR_GRAY2BGR)
+                            resized = cv2.resize(processed, (cam.width, cam.height))
+                            cam.send(resized)
                             cam.sleep_until_next_frame()
-
-                            # Save the last processed frame for snapshots
-                            self.last_frame = resized_frame.copy()
-
-                        except ValueError as ve:
-                            error_msg = f"Parameter Error: {ve}"
-                            self.logger.error(error_msg)
-                            self.error_signal.emit(error_msg)
-                            self.stop()
+                            self.last_frame = resized.copy()
+                except self.CameraError as e:
+                    error_msg = f"Virtual camera error: {e}"
+                    self.logger.error(error_msg)
+                    self.error_signal.emit(error_msg)
+                    return
+            else:
+                # Fallback: OpenCV VideoCapture + pyvirtualcam
+                cap = cv2.VideoCapture(0)
+                if not cap.isOpened():
+                    error_msg = "OpenCV fallback failed to open capture device."
+                    self.logger.error(error_msg)
+                    self.error_signal.emit(error_msg)
+                    return
+                width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                fps = cap.get(cv2.CAP_PROP_FPS) or 30
+                with pyvirtualcam.Camera(width=width, height=height, fps=fps, fmt=pyvirtualcam.PixelFormat.BGR) as cam:
+                    self.logger.info("Using OpenCV fallback backend.")
+                    self.info_signal.emit("OpenCV fallback active.")
+                    while self._is_running:
+                        ret, frame = cap.read()
+                        if not ret:
                             break
-
-                        except Exception as e:
-                            error_msg = f"Unexpected error during frame processing: {e}"
-                            self.logger.error(error_msg)
-                            self.error_signal.emit(error_msg)
-                            self.stop()
-                            break
-
-            except self.CameraError as e:
-                error_msg = f"Error initializing virtual camera: {e}"
-                self.logger.error(error_msg)
-                self.error_signal.emit(error_msg)
-                return
+                        processed = self.style_instance.apply(frame, self.style_params)
+                        if processed.ndim == 2:
+                            processed = cv2.cvtColor(processed, cv2.COLOR_GRAY2BGR)
+                        resized = cv2.resize(processed, (cam.width, cam.height))
+                        cam.send(resized)
+                        cam.sleep_until_next_frame()
+                        self.last_frame = resized.copy()
+                cap.release()
 
         except Exception as e:
             # Catch-all for any other exceptions
@@ -132,7 +133,8 @@ class WebcamThread(QThread):
             # Ensure resources are released
             if container:
                 container.close()
-                self.logger.info("Input container closed.")
+            if cap:
+                cap.release()
             self.logger.info("WebcamThread terminated.")
             self.info_signal.emit("Webcam thread terminated.")
 
@@ -143,8 +145,7 @@ class WebcamThread(QThread):
         self.info_signal.emit("Style parameters updated.")
 
     def stop(self):
-        """Stop the webcam processing loop."""
+        """Signal the webcam processing loop to stop without blocking the caller."""
         self._is_running = False
-        self.wait()  # Ensure the thread has fully stopped before returning
-        self.logger.info("WebcamThread has been stopped.")
-        self.info_signal.emit("Webcam thread has been stopped.")
+        # Do not block the UI thread here; allow run() to exit and perform cleanup
+        self.logger.info("WebcamThread stop requested; exiting loop soon.")

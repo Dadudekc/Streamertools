@@ -1,35 +1,35 @@
 {
     "input_device": "video=C270 HD WEBCAM",
-    "style": "Original",
+    "style": "Advanced Edge Detection",
     "parameters": {
         "Cartoon": {
             "bilateral_filter_diameter": 1,
             "bilateral_filter_sigmaColor": 1,
             "bilateral_filter_sigmaSpace": 1,
-            "edge_method": "Canny",
-            "edge_threshold1": 65,
-            "edge_threshold2": 58,
-            "enable_color_quantization": true,
-            "color_clusters": 14
+            "canny_threshold1": 30,
+            "canny_threshold2": 371,
+            "color_levels": 16
         },
         "Edge Detection": {
-            "threshold1": 54,
-            "threshold2": 63
+            "threshold1": 28,
+            "threshold2": 31
         },
         "Line Art": {
-            "threshold1": 66,
-            "threshold2": 38
+            "threshold1": 25,
+            "threshold2": 39,
+            "aperture_size": 3
         },
         "Sketch & Color": {
-            "blur_intensity": 49,
-            "color_strength": 0.4
+            "blur_intensity": 47,
+            "color_strength": 0.5
         },
         "Stippling": {
-            "dot_density": 1,
-            "contrast_adjustment": 1.4
+            "dot_density": 2,
+            "contrast_adjustment": 2.8
         },
         "Pencil Sketch": {
-            "blur_intensity": 18
+            "blur_intensity": 18,
+            "contrast": 1.5
         },
         "Brightness Only": {
             "brightness": -100
@@ -59,9 +59,7 @@
         "Bitwise XOR": {
             "mask_intensity": 0
         },
-        "Invert Colors": {
-            "invert_alpha": 1.0
-        },
+        "Invert Colors": {},
         "Negative": {},
         "Invert Filter": {},
         "Glitch": {
@@ -93,7 +91,7 @@
         },
         "Watercolor": {
             "sigma_s": 10,
-            "sigma_r": 0.1
+            "sigma_r": 0.2
         },
         "Hough Lines": {
             "threshold": 150,
@@ -132,35 +130,33 @@
             "threshold": 0
         },
         "Advanced Cartoon": {
-            "bilateral_filter_diameter": 7,
-            "bilateral_filter_sigmaColor": 2,
-            "bilateral_filter_sigmaSpace": 46,
+            "bilateral_filter_diameter": 4,
+            "bilateral_filter_sigmaColor": 1,
+            "bilateral_filter_sigmaSpace": 10,
             "edge_method": "Canny",
-            "edge_threshold1": 73,
-            "edge_threshold2": 74,
-            "sharpen_intensity": 2.0,
-            "enable_color_quantization": true,
-            "color_clusters": 15,
-            "enable_dynamic_lighting": false,
-            "enable_texture_overlay": false,
-            "texture_path": "texture.png",
-            "texture_alpha": 1.0,
+            "edge_threshold1": 37,
+            "edge_threshold2": 76,
+            "sharpen_intensity": 1.5,
+            "enable_color_quantization": false,
+            "color_clusters": 32,
+            "enable_dynamic_lighting": true,
+            "enable_texture_overlay": true,
+            "texture_path": "D:/MeTuber/textures/texture.png",
+            "texture_alpha": 0.0,
             "custom_color_palette": true,
             "color_palette": "vibrant",
             "enable_ai_optimization": false
         },
         "Advanced Halftone": {
-            "dot_size": 30,
-            "threshold": 255,
-            "dot_intensity": 1.5,
-            "blend_original": true
+            "dot_size": 5,
+            "threshold": 127
         },
         "Advanced Edge Detection": {
             "method": "Canny",
-            "threshold1": 73,
-            "threshold2": 125,
-            "sobel_ksize": 1,
-            "blur": 1,
+            "threshold1": 31,
+            "threshold2": 4,
+            "sobel_ksize": 7,
+            "blur": 9,
             "overlay": false,
             "glow": false,
             "glow_intensity": 0.1,
@@ -173,6 +169,53 @@
             "blur_intensity": 51,
             "stroke_thickness": 2,
             "detail_preservation": 0.1
+        },
+        "Advanced Cartoon (Anime)": {
+            "anime_mode": true,
+            "bilateral_filter_diameter": 1,
+            "bilateral_filter_sigmaColor": 1,
+            "bilateral_filter_sigmaSpace": 1,
+            "edge_method": "Canny",
+            "edge_threshold1": 49,
+            "edge_threshold2": 0,
+            "outline_thickness": 1,
+            "posterization_levels": 8,
+            "saturation_boost": 1.0,
+            "brightness_boost": 1.0,
+            "sharpen_intensity": 0.2,
+            "enable_color_quantization": true,
+            "color_clusters": 8,
+            "enable_dynamic_lighting": true,
+            "enable_bloom_effect": true,
+            "bloom_intensity": 0.4
+        },
+        "Light Pencil Sketch (Color)": {
+            "lighten_background": false,
+            "lighten_threshold": 196,
+            "bilateral_filter_diameter": 1,
+            "bilateral_filter_sigmaColor": 1,
+            "bilateral_filter_sigmaSpace": 1,
+            "edge_method": "Canny",
+            "edge_threshold1": 0,
+            "edge_threshold2": 0,
+            "outline_thickness": 1,
+            "posterization_levels": 2,
+            "saturation_boost": 0.5,
+            "brightness_boost": 0.5,
+            "sharpen_intensity": 0.0,
+            "sketch_blend": 0.0
+        },
+        "Cartoon Whole Image": {
+            "bilateral_filter_diameter": 1,
+            "bilateral_filter_sigmaColor": 71,
+            "bilateral_filter_sigmaSpace": 8,
+            "enable_color_quantization": false,
+            "color_clusters": 32,
+            "edge_method": "Canny",
+            "edge_threshold1": 40,
+            "edge_threshold2": 39,
+            "edge_thickness": 2,
+            "sharpen_intensity": 1.0
         }
     }
 }

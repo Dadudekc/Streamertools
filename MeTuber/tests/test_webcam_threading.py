@@ -1,17 +1,35 @@
 # MeTuber\tests\test_webcam_threading.py
 
-import unittest
-from unittest.mock import patch, MagicMock
-from webcam_threading import WebcamThread
+import pytest
+from unittest.mock import MagicMock, patch
 from styles.effects.original import Original
 from pyvirtualcam import PixelFormat
+from webcam_threading import WebcamThread
 
+@pytest.mark.usefixtures("qapp")
+class TestWebcamThreading:
+    """Test cases for WebcamThread class."""
 
-class TestWebcamThreading(unittest.TestCase):
+    @pytest.fixture
+    def webcam_thread(self, request):
+        """Fixture to manage WebcamThread lifecycle."""
+        thread = None
+        def cleanup():
+            if thread is not None and thread.is_alive():
+                thread.stop()
+                thread.join(timeout=5)
+        request.addfinalizer(cleanup)
+        return thread
 
-    @patch('webcam_threading.av.open')  # Adjusted patch path
-    @patch('webcam_threading.pyvirtualcam.Camera')  # Adjusted patch path
-    def test_thread_initialization(self, mock_camera, mock_av_open):
+    @pytest.fixture(autouse=True)
+    def setup_test(self, qtbot):
+        """Setup test environment."""
+        self.qtbot = qtbot
+        yield
+
+    @patch('webcam_threading.av.open')
+    @patch('webcam_threading.pyvirtualcam.Camera')
+    def test_thread_initialization(self, mock_camera, mock_av_open, webcam_thread, qtbot):
         """Test if WebcamThread initializes correctly."""
         mock_av_instance = MagicMock()
         mock_av_open.return_value = mock_av_instance
@@ -23,7 +41,10 @@ class TestWebcamThreading(unittest.TestCase):
         params = {}
 
         thread = WebcamThread("video=TestDevice", style, params)
-        thread.start()
+        webcam_thread = thread  # Assign to fixture for cleanup
+        
+        with qtbot.waitSignal(thread.started, timeout=5000):
+            thread.start()
 
         # Ensure av.open was called with the correct device
         mock_av_open.assert_called_with("video=TestDevice", format="dshow")
@@ -32,7 +53,8 @@ class TestWebcamThreading(unittest.TestCase):
         mock_camera.assert_called_with(width=640, height=480, fps=30, fmt=PixelFormat.BGR)
 
         # Stop the thread
-        thread.stop()
+        with qtbot.waitSignal(thread.finished, timeout=5000):
+            thread.stop()
+            thread.wait()
 
-        # Assert the thread is no longer running
-        self.assertFalse(thread._is_running)  # Correct attribute used
+        assert not thread._is_running  # Using pytest style assertions

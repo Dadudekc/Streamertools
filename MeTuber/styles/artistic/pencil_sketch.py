@@ -7,56 +7,61 @@ class PencilSketch(Style):
     """
     A style that creates a pencil sketch effect on live webcam feeds.
     """
-    name = "Pencil Sketch"
-    category = "Artistic"
-    parameters = [
-        {
-            "name": "blur_intensity",
-            "type": "int",
-            "default": 21,
-            "min": 1,
-            "max": 51,
-            "step": 2,
-            "label": "Blur Intensity",
-        }
-    ]
+    def __init__(self):
+        super().__init__()
+        self.name = "Pencil Sketch"
+        self.category = "Artistic"
 
     def define_parameters(self):
-        return self.parameters
+        """Define parameters for pencil sketch effect."""
+        return {
+            "blur_intensity": {"default": 15, "min": 1, "max": 51},
+            "contrast": {"default": 1.5, "min": 0.5, "max": 5.0}
+        }
 
     def apply(self, image, params=None):
+        """Apply pencil sketch effect to the image.
+        
+        Args:
+            image (numpy.ndarray): Input image in BGR format
+            params (dict, optional): Parameters for the effect
+                - blur_intensity: Intensity of the blur effect
+                - contrast: Contrast adjustment for the sketch
+        
+        Returns:
+            numpy.ndarray: Image with pencil sketch effect in grayscale format
+        """
         if image is None or not isinstance(image, np.ndarray):
-            raise ValueError("Input image must be a valid NumPy array.")
-        if image.ndim != 3 or image.shape[2] != 3:
-            raise ValueError("Input must be a 3-channel BGR image.")
+            raise ValueError("Input image must be a valid NumPy array")
 
-        # Validate and sanitize parameters
-        params = self.validate_params(params or {})
-        blur_intensity = params["blur_intensity"]
+        # Use default parameters if none provided
+        if params is None:
+            params = {name: param["default"] for name, param in self.define_parameters().items()}
 
-        # Ensure blur intensity is odd
-        if blur_intensity % 2 == 0:
-            blur_intensity += 1
+        # Get and validate parameters
+        blur_intensity = params.get("blur_intensity", 15)
+        if not 1 <= blur_intensity <= 51:
+            raise ValueError("Parameter 'blur_intensity' must be between 1 and 51.")
+
+        contrast = params.get("contrast", 1.5)
+        if not 0.5 <= contrast <= 5.0:
+            raise ValueError("Parameter 'contrast' must be between 0.5 and 5.0.")
 
         # Convert to grayscale
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-        # Invert the grayscale image
-        inverted_gray = cv2.bitwise_not(gray)
+        # Apply Gaussian blur
+        blurred = cv2.GaussianBlur(gray, (blur_intensity, blur_intensity), 0)
 
-        # Apply Gaussian blur to the inverted image
-        blurred = cv2.GaussianBlur(inverted_gray, (blur_intensity, blur_intensity), 0)
+        # Apply adaptive threshold
+        sketch = cv2.adaptiveThreshold(
+            blurred, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 11, 2
+        )
 
-        # Invert the blurred image
-        inverted_blur = cv2.bitwise_not(blurred)
+        # Adjust contrast
+        sketch = cv2.convertScaleAbs(sketch, alpha=contrast, beta=0)
 
-        # Combine the grayscale and inverted blur to create the pencil sketch effect
-        sketch = cv2.divide(gray, inverted_blur, scale=256.0)
-
-        # Convert single-channel sketch to BGR for compatibility with video feeds
-        sketch_bgr = cv2.cvtColor(sketch, cv2.COLOR_GRAY2BGR)
-
-        return sketch_bgr
+        return sketch
 
 
 # Live webcam feed integration

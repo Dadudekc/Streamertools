@@ -112,9 +112,10 @@ class AdvancedCartoon(Style):
         },
         {
             "name": "texture_path",
-            "type": "str",
-            "default": "textures/texture.png",  # Updated default path
+            "type": "file",
+            "default": "textures/texture.png",
             "label": "Texture Image Path",
+            "file_filter": "Image Files (*.png *.jpg *.jpeg *.bmp)"
         },
         {
             "name": "texture_alpha",

@@ -1,6 +1,6 @@
 # gui_components/parameter_controls.py
 
-from PyQt5.QtWidgets import QWidget, QFormLayout, QSlider, QLabel, QHBoxLayout, QComboBox, QCheckBox
+from PyQt5.QtWidgets import QWidget, QFormLayout, QSlider, QLabel, QHBoxLayout, QComboBox, QCheckBox, QLineEdit, QPushButton, QFileDialog
 from PyQt5.QtCore import Qt
 from functools import partial
 import logging
@@ -44,6 +44,11 @@ class ParameterControls(QWidget):
             elif param["type"] == "bool":
                 logging.debug(f"Adding checkbox for parameter: {param['name']}")
                 self._add_checkbox_control(param, current_params, callback, label)
+
+            # Add file path picker for 'file' type parameters
+            elif param["type"] == "file":
+                logging.debug(f"Adding file picker for parameter: {param['name']}")
+                self._add_file_picker_control(param, current_params, callback, label)
 
             else:
                 logging.warning(f"Unsupported parameter type: {param['type']}")
@@ -212,6 +217,29 @@ class ParameterControls(QWidget):
         self.form_layout.addRow(label, checkbox)
         self.controls[param["name"]] = checkbox
         logging.debug(f"Added checkbox control for {param['name']}")
+
+    def _add_file_picker_control(self, param, current_params, callback, label):
+        """
+        Add a file picker control for file path parameters.
+        """
+        layout = QHBoxLayout()
+        editor = QLineEdit()
+        # Set current or default path
+        editor.setText(current_params.get(param['name'], param.get('default', '')))
+        button = QPushButton("Browse")
+        def on_browse():
+            path, _ = QFileDialog.getOpenFileName(
+                self, f"Select {param.get('label', param['name'])}", "", param.get('file_filter', 'All Files (*)')
+            )
+            if path:
+                editor.setText(path)
+                if callable(callback):
+                    callback(param['name'], path, editor)
+        button.clicked.connect(on_browse)
+        layout.addWidget(editor)
+        layout.addWidget(button)
+        self.form_layout.addRow(label, layout)
+        self.controls[param['name']] = editor
 
     def clear_layout(self):
         """

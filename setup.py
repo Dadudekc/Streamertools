@@ -12,6 +12,7 @@ setup(
     install_requires=[
         "opencv-python",
         "numpy",
+        "scikit-image",
         "PyQt5",
         "pyvirtualcam",
         "av",

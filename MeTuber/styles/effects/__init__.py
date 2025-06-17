@@ -1,21 +1,16 @@
-# styles/effects/misc/__init__.py
+# styles/effects/__init__.py
 
-from ..basic.brightness_only import BrightnessOnly
-from ..basic.contrast_only import ContrastOnly
-from ..basic.sepia_vibrant import SepiaVibrant
 from .emboss_contrast import EmbossContrast
 from .black_white import BlackWhite
 from .color_quantization import ColorQuantization
-from styles.artistic.watercolor import Watercolor
-from styles.effects.lines import HoughLines, CannyEdge
-# Import other effects as needed
+from .lines import HoughLines, CannyEdge
+from ..artistic.watercolor import Watercolor
 
 __all__ = [
-    "BrightnessOnly",
-    "ContrastOnly",
-    "SepiaVibrant",
     "EmbossContrast",
     "BlackWhite",
     "ColorQuantization",
+    "HoughLines",
+    "CannyEdge",
     "Watercolor",
 ]

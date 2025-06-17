@@ -1,7 +1,26 @@
-```markdown
 # OBS Live Filter and Overlay Library
 
-This project is a Python-based library designed to easily apply various image filters and overlays to live Twitch feeds through OBS. With a growing variety of styles and effects, it’s built to be modular, expandable, and user-friendly for streamers who want to add creative flair to their live streams.
+This project is a Python-based library designed to easily apply various image filters and overlays to live Twitch feeds through OBS. With a growing variety of styles and effects, it's built to be modular, expandable, and user-friendly for streamers who want to add creative flair to their live streams.
+
+## Project Structure
+
+```
+MeTuber/
+├── src/                    # Source code
+│   ├── config/            # Configuration management
+│   ├── core/              # Core functionality
+│   ├── gui/               # GUI components
+│   │   └── components/    # Reusable GUI widgets
+│   └── services/          # Service layer
+├── styles/                # Style implementations
+│   ├── artistic/         # Artistic effects
+│   ├── basic/            # Basic filters
+│   ├── distortions/      # Distortion effects
+│   └── effects/          # Special effects
+├── tests/                # Test suite
+├── requirements.txt      # Project dependencies
+└── README.md            # This file
+```
 
 ## Key Features
 
@@ -12,7 +31,6 @@ This project is a Python-based library designed to easily apply various image fi
 - **Modular Design:** Designed for scalability with a focus on adding new effects quickly.
 - **Seamless OBS Integration:** Built to work seamlessly with OBS for live stream customization.
 - **Comprehensive Testing:** 80%+ test coverage ensures reliability and stability.
-```
 
 ## Installation
 
@@ -40,7 +58,16 @@ This project is a Python-based library designed to easily apply various image fi
 
 ## Usage
 
+### Running the Application
+
+To start the application:
+
+```bash
+python src/main.py
+```
+
 ### Example: Applying a Vibrant Color Filter
+
 To apply a vibrant color filter to an image, follow these steps:
 
 ```python
@@ -60,6 +87,7 @@ cv2.imwrite("output.jpg", result)
 ```
 
 ### Example: Adding a Halftone Overlay
+
 ```python
 from styles.distortions.halftone import Halftone
 
@@ -76,7 +104,9 @@ cv2.imwrite("halftone_output.jpg", result)
 ```
 
 ## Expanding the Library
+
 The library is modular and designed for easy expansion. To add a new style:
+
 1. Create a new file in the appropriate `styles/` subfolder.
 2. Define a new class inheriting from `Style` in `base.py`.
 3. Implement the `apply` method to process the image and define any parameters.
@@ -85,13 +115,42 @@ The library is modular and designed for easy expansion. To add a new style:
 ## Testing
 
 This project includes comprehensive tests with `pytest`. To run all tests:
+
 ```bash
 pytest -n auto --cov=styles tests/
+```
+
+To run tests with a specific style:
+
+```bash
+pytest tests/test_vibrant_color.py
 ```
 
 ## Contributing
 
 Contributions are welcome! Please fork the repository, make changes, and submit a pull request. Ensure your code follows PEP 8 guidelines and is well-documented.
+
+### Development Setup
+
+1. Install development dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. Run code formatting:
+   ```bash
+   black src/ tests/
+   ```
+
+3. Run linting:
+   ```bash
+   flake8 src/ tests/
+   ```
+
+4. Run type checking:
+   ```bash
+   mypy src/ tests/
+   ```
 
 ## License
 

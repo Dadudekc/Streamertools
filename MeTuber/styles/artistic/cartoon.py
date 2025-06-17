@@ -10,160 +10,88 @@ class Cartoon(Style):
     bilateral filtering, and optional color quantization.
     """
 
-    name = "Cartoon"
-    category = "Artistic"
-    parameters = [
-        {
-            "name": "bilateral_filter_diameter",
-            "type": "int",
-            "default": 9,
-            "min": 1,
-            "max": 20,
-            "step": 1,
-            "label": "Bilateral Filter Diameter",
-        },
-        {
-            "name": "bilateral_filter_sigmaColor",
-            "type": "int",
-            "default": 75,
-            "min": 1,
-            "max": 150,
-            "step": 1,
-            "label": "Bilateral Filter SigmaColor",
-        },
-        {
-            "name": "bilateral_filter_sigmaSpace",
-            "type": "int",
-            "default": 75,
-            "min": 1,
-            "max": 150,
-            "step": 1,
-            "label": "Bilateral Filter SigmaSpace",
-        },
-        {
-            "name": "edge_method",
-            "type": "str",
-            "default": "Canny",
-            "options": ["Canny", "Laplacian", "Sobel"],
-            "label": "Edge Detection Method",
-        },
-        {
-            "name": "edge_threshold1",
-            "type": "int",
-            "default": 100,
-            "min": 0,
-            "max": 500,
-            "step": 1,
-            "label": "Edge Threshold 1",
-        },
-        {
-            "name": "edge_threshold2",
-            "type": "int",
-            "default": 200,
-            "min": 0,
-            "max": 500,
-            "step": 1,
-            "label": "Edge Threshold 2",
-        },
-        {
-            "name": "enable_color_quantization",
-            "type": "bool",
-            "default": False,
-            "label": "Enable Color Quantization",
-        },
-        {
-            "name": "color_clusters",
-            "type": "int",
-            "default": 8,
-            "min": 2,
-            "max": 32,
-            "step": 2,
-            "label": "Color Clusters",
-        },
-        {
-            "name": "apply_edge_dilation",
-            "type": "bool",
-            "default": True,
-            "label": "Apply Edge Dilation",
-        },
-        {
-            "name": "dilation_iterations",
-            "type": "int",
-            "default": 1,
-            "min": 0,
-            "max": 5,
-            "step": 1,
-            "label": "Dilation Iterations",
-        },
-    ]
+    def __init__(self):
+        super().__init__()
+        self.name = "Cartoon"
+        self.category = "Artistic"
 
-    def define_parameters(self) -> list:
-        """Returns the parameter definitions for the Cartoon effect."""
-        return self.parameters
+    def define_parameters(self):
+        """Define parameters for cartoon effect."""
+        return {
+            "bilateral_filter_diameter": {"default": 9, "min": 1, "max": 20},
+            "bilateral_filter_sigmaColor": {"default": 75, "min": 1, "max": 150},
+            "bilateral_filter_sigmaSpace": {"default": 75, "min": 1, "max": 150},
+            "canny_threshold1": {"default": 100, "min": 0, "max": 500},
+            "canny_threshold2": {"default": 200, "min": 0, "max": 500},
+            "color_levels": {"default": 8, "min": 2, "max": 16}
+        }
 
-    def apply(self, image: np.ndarray, params: Optional[Dict[str, Any]] = None) -> np.ndarray:
-        """
-        Apply the cartoon effect using refined edge detection, bilateral filtering, and optional color quantization.
-
+    def apply(self, image, params=None):
+        """Apply cartoon effect to the image.
+        
         Args:
-            image (np.ndarray): The input image in BGR format.
-            params (Optional[Dict[str, Any]]): Parameters for the cartoon effect.
-
+            image (numpy.ndarray): Input image in BGR format
+            params (dict, optional): Parameters for the effect
+                - bilateral_filter_diameter: Diameter of the bilateral filter
+                - bilateral_filter_sigmaColor: Color sigma for bilateral filter
+                - bilateral_filter_sigmaSpace: Space sigma for bilateral filter
+                - canny_threshold1: First threshold for edge detection
+                - canny_threshold2: Second threshold for edge detection
+                - color_levels: Number of color levels for quantization
+        
         Returns:
-            np.ndarray: The processed image with a cartoon effect.
+            numpy.ndarray: Image with cartoon effect
         """
-        # Validate image input
         if image is None or not isinstance(image, np.ndarray):
-            raise ValueError("Input image must be a valid NumPy array.")
-        if image.ndim != 3 or image.shape[2] != 3:
-            raise ValueError("Input image must be a 3-channel (BGR) image.")
+            raise ValueError("Input image must be a valid NumPy array")
 
-        # Validate and extract parameters
-        params = self.validate_params(params or {})
-        d = params["bilateral_filter_diameter"]
-        sigmaColor = params["bilateral_filter_sigmaColor"]
-        sigmaSpace = params["bilateral_filter_sigmaSpace"]
-        edge_method = params["edge_method"]
-        threshold1 = params["edge_threshold1"]
-        threshold2 = params["edge_threshold2"]
-        enable_color_quantization = params["enable_color_quantization"]
-        color_clusters = params["color_clusters"]
-        apply_edge_dilation = params.get("apply_edge_dilation", True)
-        dilation_iterations = params.get("dilation_iterations", 1)
+        # Use default parameters if none provided
+        if params is None:
+            params = {name: param["default"] for name, param in self.define_parameters().items()}
 
-        # Step 1: Apply Bilateral Filter to smooth colors while preserving edges
-        filtered = cv2.bilateralFilter(image, d, sigmaColor, sigmaSpace)
+        # Get and validate parameters
+        d = params.get("bilateral_filter_diameter", 9)
+        if not 1 <= d <= 20:
+            raise ValueError("Parameter 'bilateral_filter_diameter' must be between 1 and 20.")
 
-        # Step 2: Convert to grayscale and apply the chosen edge detection method
-        gray = cv2.cvtColor(filtered, cv2.COLOR_BGR2GRAY)
-        if edge_method == "Canny":
-            edges = cv2.Canny(gray, threshold1, threshold2)
-        elif edge_method == "Laplacian":
-            edges = cv2.Laplacian(gray, cv2.CV_8U, ksize=5)
-        elif edge_method == "Sobel":
-            edges_x = cv2.Sobel(gray, cv2.CV_8U, 1, 0, ksize=5)
-            edges_y = cv2.Sobel(gray, cv2.CV_8U, 0, 1, ksize=5)
-            edges = cv2.addWeighted(edges_x, 0.5, edges_y, 0.5, 0)
-        else:
-            raise ValueError(f"Unsupported edge detection method: {edge_method}")
+        sigma_color = params.get("bilateral_filter_sigmaColor", 75)
+        if not 1 <= sigma_color <= 150:
+            raise ValueError("Parameter 'bilateral_filter_sigmaColor' must be between 1 and 150.")
 
-        # Optional: Apply dilation to thicken the edges for a more pronounced effect
-        if apply_edge_dilation and dilation_iterations > 0:
-            kernel = np.ones((3, 3), np.uint8)
-            edges = cv2.dilate(edges, kernel, iterations=dilation_iterations)
+        sigma_space = params.get("bilateral_filter_sigmaSpace", 75)
+        if not 1 <= sigma_space <= 150:
+            raise ValueError("Parameter 'bilateral_filter_sigmaSpace' must be between 1 and 150.")
 
-        # Convert edge image to BGR format for later combination
-        edges_colored = cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR)
+        t1 = params.get("canny_threshold1", 100)
+        if not 0 <= t1 <= 500:
+            raise ValueError("Parameter 'canny_threshold1' must be between 0 and 500.")
 
-        # Step 3: Optional Color Quantization for stronger cartoon effect
-        if enable_color_quantization:
-            quantized = self.quantize_colors(filtered, color_clusters)
-        else:
-            quantized = filtered
+        t2 = params.get("canny_threshold2", 200)
+        if not 0 <= t2 <= 500:
+            raise ValueError("Parameter 'canny_threshold2' must be between 0 and 500.")
 
-        # Step 4: Combine edges with the filtered (or quantized) image using bitwise AND
-        cartoonized = cv2.bitwise_and(quantized, edges_colored)
-        return cartoonized
+        levels = params.get("color_levels", 8)
+        if not 2 <= levels <= 16:
+            raise ValueError("Parameter 'color_levels' must be between 2 and 16.")
+
+        # Apply bilateral filter for smoothing while preserving edges
+        color = cv2.bilateralFilter(image, d, sigma_color, sigma_space)
+
+        # Convert to grayscale for edge detection
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+        # Apply edge detection
+        edges = cv2.Canny(gray, t1, t2)
+        edges = cv2.dilate(edges, None)
+
+        # Reduce color palette
+        div = 256 // levels
+        color = color // div * div + div // 2
+
+        # Combine edges with color image
+        cartoon = cv2.bitwise_and(color, color, mask=255 - edges)
+
+        return cartoon
 
     def quantize_colors(self, image: np.ndarray, k: int) -> np.ndarray:
         """

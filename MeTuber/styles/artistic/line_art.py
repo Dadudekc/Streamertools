@@ -9,70 +9,60 @@ class LineArt(Style):
     """
     A style that applies a line art effect using edge detection.
     """
-    name = "Line Art"
-    category = "Artistic"
-    parameters = [
-        {
-            "name": "threshold1",
-            "type": "int",
-            "default": 50,
-            "min": 0,
-            "max": 255,
-            "step": 1,
-            "label": "Threshold 1",
-        },
-        {
-            "name": "threshold2",
-            "type": "int",
-            "default": 150,
-            "min": 0,
-            "max": 255,
-            "step": 1,
-            "label": "Threshold 2",
-        },
-    ]
+    def __init__(self):
+        super().__init__()
+        self.name = "Line Art"
+        self.category = "Artistic"
 
     def define_parameters(self):
         """
-        Returns the parameter definitions for the Line Art effect.
+        Define parameters for line art effect.
         """
-        return self.parameters
+        return {
+            "threshold1": {"default": 50, "min": 0, "max": 255},
+            "threshold2": {"default": 150, "min": 0, "max": 255},
+            "aperture_size": {"default": 3, "min": 3, "max": 7, "step": 2}
+        }
 
     def apply(self, image, params=None):
         """
-        Applies the line art effect to the image using edge detection.
-
+        Apply line art effect to the image.
+        
         Args:
-            image (numpy.ndarray): Input image in BGR format.
-            params (dict, optional): Parameters for the line art effect.
-
+            image (numpy.ndarray): Input image in BGR format
+            params (dict, optional): Parameters for the effect
+                - threshold1: First threshold for edge detection
+                - threshold2: Second threshold for edge detection
+                - aperture_size: Aperture size for the Sobel operator
+        
         Returns:
-            numpy.ndarray: Line art image.
-
-        Raises:
-            ValueError: If the input image is None or invalid.
+            numpy.ndarray: Image with line art effect in grayscale format
         """
         if image is None or not isinstance(image, np.ndarray):
-            raise ValueError("Input image must be a valid NumPy array.")
-        if image.ndim != 3 or image.shape[2] != 3:
-            raise ValueError("Input image must be a 3-channel (BGR) image.")
+            raise ValueError("Input image must be a valid NumPy array")
 
-        # Validate and sanitize parameters
-        params = self.validate_params(params or {})
+        # Use default parameters if none provided
+        if params is None:
+            params = {name: param["default"] for name, param in self.define_parameters().items()}
 
-        threshold1 = params["threshold1"]
-        threshold2 = params["threshold2"]
+        # Get and validate parameters
+        t1 = params.get("threshold1", 50)
+        if not 0 <= t1 <= 255:
+            raise ValueError("Parameter 'threshold1' must be between 0 and 255.")
 
-        # Convert the image to grayscale
+        t2 = params.get("threshold2", 150)
+        if not 0 <= t2 <= 255:
+            raise ValueError("Parameter 'threshold2' must be between 0 and 255.")
+
+        aperture = params.get("aperture_size", 3)
+        if aperture not in [3, 5, 7]:
+            raise ValueError("Parameter 'aperture_size' must be 3, 5, or 7.")
+
+        # Convert to grayscale
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-        # Apply Canny edge detection
-        edges = cv2.Canny(gray, threshold1, threshold2)
+        # Apply edge detection
+        edges = cv2.Canny(gray, t1, t2, apertureSize=aperture)
 
-        # Invert the edges for a line art effect
-        line_art = cv2.bitwise_not(edges)
-
-        # Convert single-channel line art to BGR for consistency
-        line_art_bgr = cv2.cvtColor(line_art, cv2.COLOR_GRAY2BGR)
-
-        return line_art_bgr
+        # Invert the edges to get white lines on black background
+        return cv2.bitwise_not(edges)

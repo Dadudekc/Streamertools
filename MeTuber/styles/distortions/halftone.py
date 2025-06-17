@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from ..base import Style
+from styles.base import Style
 
 
 class Halftone(Style):
@@ -8,37 +8,22 @@ class Halftone(Style):
     Applies a halftone effect to the image with adjustable dot size and threshold.
     """
 
-    name = "Halftone"
-    category = "Distortions"
-    parameters = [
-        {
-            "name": "dot_size",
-            "type": "int",
-            "default": 5,
-            "min": 1,
-            "max": 20,
-            "step": 1,
-            "label": "Dot Size",
-        },
-        {
-            "name": "threshold",
-            "type": "int",
-            "default": 127,
-            "min": 0,
-            "max": 255,
-            "step": 5,
-            "label": "Threshold",
-        },
-    ]
+    def __init__(self):
+        super().__init__()
+        self.name = "Halftone"
+        self.category = "Distortions"
 
     def define_parameters(self):
         """
         Defines the parameters for the Halftone effect.
 
         Returns:
-            list: List of parameter dictionaries for the halftone effect.
+            dict: Dictionary of parameter names and their default values.
         """
-        return self.parameters
+        return {
+            "dot_size": {"default": 3, "min": 1, "max": 10},
+            "threshold": {"default": 128, "min": 0, "max": 255}
+        }
 
     def apply(self, image, params=None):
         """
@@ -54,31 +39,44 @@ class Halftone(Style):
         Raises:
             ValueError: If the input image is None or invalid.
         """
-        if image is None:
-            raise ValueError("Input image cannot be None.")
-        if not isinstance(image, np.ndarray):
-            raise ValueError("Invalid image provided. Expected a NumPy array.")
-        if image.ndim != 3 or image.shape[2] != 3:
-            raise ValueError("Input image must be a 3-channel BGR image.")
+        if image is None or not isinstance(image, np.ndarray):
+            raise ValueError("Input image must be a valid NumPy array")
 
-        # Validate and sanitize parameters
-        params = self.validate_params(params or {})
+        # Use default parameters if none provided
+        if params is None:
+            params = {name: param["default"] for name, param in self.define_parameters().items()}
 
-        dot_size = params["dot_size"]
-        threshold = params["threshold"]
+        # Get and validate parameters
+        dot_size = params.get("dot_size", 3)
+        if not 1 <= dot_size <= 10:
+            raise ValueError("Parameter 'dot_size' must be between 1 and 10.")
 
-        # Convert the image to grayscale
+        threshold = params.get("threshold", 128)
+        if not 0 <= threshold <= 255:
+            raise ValueError("Parameter 'threshold' must be between 0 and 255.")
+
+        # Convert to grayscale
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-        # Apply binary thresholding
-        _, binary = cv2.threshold(gray, threshold, 255, cv2.THRESH_BINARY)
+        # Create output image
+        output = np.zeros_like(image)
 
-        # Create an empty white canvas
-        halftone = np.full_like(image, 255)
+        # Process each color channel separately
+        for c in range(3):
+            # Get current channel
+            channel = image[:, :, c]
+            
+            # Create halftone pattern for this channel
+            for y in range(0, gray.shape[0], dot_size):
+                for x in range(0, gray.shape[1], dot_size):
+                    # Get the average intensity in this region
+                    region = channel[y:y+dot_size, x:x+dot_size]
+                    avg_intensity = np.mean(region)
+                    
+                    # Create dot based on intensity
+                    if avg_intensity > threshold:
+                        output[y:y+dot_size, x:x+dot_size, c] = 255
+                    else:
+                        output[y:y+dot_size, x:x+dot_size, c] = 0
 
-        # Optimized halftone pattern drawing
-        y_indices, x_indices = np.where(binary == 0)  # Find black pixels
-        for y, x in zip(y_indices[::dot_size * 2], x_indices[::dot_size * 2]):
-            cv2.circle(halftone, (x, y), dot_size, (0, 0, 0), -1)
-
-        return halftone
+        return output

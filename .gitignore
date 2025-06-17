@@ -1,2 +1,39 @@
 UnityCapture-master/
 UnityCapture.zip
+
+# --- Python build artifacts ---
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# --- Virtual environments & local envs ---
+.env/
+.venv/
+venv/
+ENV/
+
+# --- Logs & runtime files ---
+*.log
+webcam_app.log*
+
+# --- IDE & editor settings ---
+.idea/
+.vscode/
+*.swp
+
+# --- Binary / packaging outputs ---
+*.whl
+*.manifest
+*.spec
+
+# --- OS generated files ---
+.DS_Store
+Thumbs.db
+
+# --- Project-specific ---
+textures/

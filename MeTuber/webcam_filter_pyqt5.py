@@ -10,6 +10,7 @@ import cv2
 import numpy as np
 import pyvirtualcam
 import logging
+from logging.handlers import RotatingFileHandler
 import pkgutil
 import importlib
 from PyQt5.QtWidgets import (
@@ -197,12 +198,25 @@ class WebcamApp(QWidget):
                 validated_params = style_instance.validate_params(style_params)
             except Exception as e:
                 logging.warning(f"Invalid parameters for style '{style_name}': {e}. Resetting to defaults.")
+                # Reset to defaults using normalized parameters
                 validated_params = {
                     param['name']: param.get("default", 0)
-                    for param in style_instance.define_parameters()
+                    for param in style_instance.parameters
                 }
+            # For 'file' type parameters, if the path no longer exists, reset to default
+            for param in style_instance.parameters:
+                if param.get("type") == "file":
+                    file_path = validated_params.get(param["name"], "")
+                    if file_path and not os.path.exists(file_path):
+                        logging.warning(
+                            f"File for parameter '{param['name']}' not found at '{file_path}'. Resetting to default '{param.get('default', '')}'."
+                        )
+                        validated_params[param['name']] = param.get("default", "")
             self.settings["parameters"][style_name] = validated_params
         save_settings(self.settings)
+        # If the UI is initialized, update controls to reflect any changed defaults (e.g. file paths)
+        if hasattr(self, 'parameter_controls'):
+            self.update_parameter_controls()
 
     def init_ui(self):
         layout = QVBoxLayout()
@@ -240,6 +254,11 @@ class WebcamApp(QWidget):
         )
         self.action_buttons = action_buttons
 
+        # 4.1) Auto Optimize Parameters Button
+        self.optimize_button = QPushButton("Auto Optimize Parameters")
+        self.optimize_button.clicked.connect(self.auto_optimize_parameters)
+        layout.addWidget(self.optimize_button)
+
         # 5) Status Display
         self.status_label = QLabel("Status: Idle")
         self.status_label.setAlignment(Qt.AlignCenter)
@@ -259,12 +278,28 @@ class WebcamApp(QWidget):
             logging.info(f"Updating parameters for style: {selected_style_name}")
 
             # Ensure all parameters have default values if missing
-            for param in self.current_style.define_parameters():
+            for param in self.current_style.parameters:
                 if param["name"] not in self.current_style_params:
                     self.current_style_params[param["name"]] = param.get("default", 0)
+            # For 'file' parameters, if the path no longer exists (e.g. file moved), reset to default to update GUI
+            for param in self.current_style.parameters:
+                if param.get("type") == "file":
+                    current_path = self.current_style_params.get(param["name"], "")
+                    if current_path and not os.path.exists(current_path):
+                        logging.info(
+                            f"File for parameter '{param['name']}' not found at '{current_path}', resetting to default '{param.get('default','')}'"
+                        )
+                        # Reset internal state and update settings
+                        new_default = param.get('default', '')
+                        self.current_style_params[param['name']] = new_default
+                        # Persist change
+                        style_name = self.style_tab_manager.get_current_style()
+                        self.settings['parameters'][style_name][param['name']] = new_default
+                        save_settings(self.settings)
 
+            # Update controls based on normalized parameters list
             self.parameter_controls.update_parameters(
-                self.current_style.define_parameters(),
+                self.current_style.parameters,
                 self.current_style_params,
                 self.on_param_changed
             )
@@ -382,6 +417,38 @@ class WebcamApp(QWidget):
         self.status_label.setText(f"Status: {message}")
         logging.info(f"Info: {message}")
 
+    def auto_optimize_parameters(self):
+        """Use AI to find the best parameters for the current style on the last frame."""
+        # Ensure there's a frame to optimize on
+        if not self.thread or self.thread.last_frame is None:
+            QMessageBox.warning(self, "AI Optimize Error", "No frame available for optimization.")
+            return
+        selected_style = self.current_style
+        # Check if the style supports AI optimization
+        if not hasattr(selected_style, "ai_optimize"):
+            QMessageBox.information(self, "AI Optimize", "Current style does not support AI optimization.")
+            return
+        try:
+            # Run AI optimization on the last captured frame
+            optimized_params = selected_style.ai_optimize(self.thread.last_frame, self.current_style_params.copy())
+            # Disable recursive AI flag if present
+            if "enable_ai_optimization" in optimized_params:
+                optimized_params["enable_ai_optimization"] = False
+            # Update internal state and UI controls
+            self.current_style_params = optimized_params
+            self.parameter_controls.update_parameters(
+                selected_style.parameters,
+                self.current_style_params,
+                self.on_param_changed
+            )
+            # Save optimized parameters
+            style_name = self.style_tab_manager.get_current_style()
+            self.settings["parameters"][style_name] = self.current_style_params
+            save_settings(self.settings)
+            QMessageBox.information(self, "AI Optimize", "Parameters optimized and updated.")
+        except Exception as e:
+            QMessageBox.critical(self, "AI Optimize Error", f"Optimization failed: {e}")
+
     def closeEvent(self, event):
         """Ensure the thread stops when closing the app."""
         if self.thread and self.thread.isRunning():
@@ -394,14 +461,16 @@ class WebcamApp(QWidget):
 # =============================================================================
 
 def main():
-    # Setup logging
+    # Setup logging with rotation
+    file_handler = RotatingFileHandler(
+        "webcam_app.log", maxBytes=5 * 1024 * 1024, backupCount=3
+    )
+    file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
     logging.basicConfig(
         level=logging.DEBUG,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler("webcam_app.log"),
-            logging.StreamHandler(sys.stdout)
-        ]
+        handlers=[file_handler, stream_handler]
     )
 
     app = QApplication(sys.argv)

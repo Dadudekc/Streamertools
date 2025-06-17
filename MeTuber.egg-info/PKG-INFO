@@ -1,4 +1,4 @@
-Metadata-Version: 2.1
+Metadata-Version: 2.4
 Name: MeTuber
 Version: 1.0.0
 Summary: A Python-based library for webcam threading and artistic effects.
@@ -11,6 +11,7 @@ Classifier: Operating System :: OS Independent
 Requires-Python: >=3.8
 Requires-Dist: opencv-python
 Requires-Dist: numpy
+Requires-Dist: scikit-image
 Requires-Dist: PyQt5
 Requires-Dist: pyvirtualcam
 Requires-Dist: av
@@ -19,3 +20,11 @@ Requires-Dist: pytest-cov
 Provides-Extra: dev
 Requires-Dist: black; extra == "dev"
 Requires-Dist: flake8; extra == "dev"
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: home-page
+Dynamic: provides-extra
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
