@@ -16,6 +16,7 @@ from webcam_filter_pyqt5 import (
 from PyQt5.QtTest import QTest
 from PyQt5.QtWidgets import QApplication, QPushButton, QMessageBox
 from PyQt5.QtCore import Qt
+import logging
 
 CONFIG_FILE = "config.json"
 
@@ -184,23 +185,89 @@ class TestWebcamApp:  # Changed to pytest style
             self.app.on_param_changed
         )
 
-    @patch('PyQt5.QtWidgets.QMessageBox.warning')
-    @patch('PyQt5.QtWidgets.QComboBox.currentText', return_value="")
-    def test_start_virtual_camera_no_device(self, mock_combo, mock_warning, qtbot):
-        self.app.start_virtual_camera()
-        mock_warning.assert_called_once_with(self.app, "Input Device Error", "Please specify a valid input device.")
+    @patch('PyQt5.QtWidgets.QMessageBox.critical')
+    def test_start_virtual_camera_no_device(self, mock_critical, qtbot):
+        self.app.device_combo.setCurrentText("")
+        self.app.style_tab_manager.get_current_style = MagicMock(return_value="Original")
+        self.app.current_style_params = {}
+        self.app.current_style = MagicMock()
+        self.app.style_instances["Original"] = MagicMock()
+        qtbot.mouseClick(self.app.action_buttons.start_button, Qt.LeftButton)
+        mock_critical.assert_called_once()
 
-    def test_start_virtual_camera_no_style(self, qtbot):
+    @patch('PyQt5.QtWidgets.QMessageBox.critical')
+    def test_start_virtual_camera_no_style(self, mock_critical, qtbot):
+        self.app.device_combo.setCurrentText("video=C270 HD WEBCAM")
         self.app.style_tab_manager.get_current_style = MagicMock(return_value=None)
-        with patch.object(QMessageBox, "warning") as mock_warning:
-            self.app.start_virtual_camera()
-            mock_warning.assert_called_once_with(self.app, "Style Selection Error", "Please select a style.")
+        qtbot.mouseClick(self.app.action_buttons.start_button, Qt.LeftButton)
+        mock_critical.assert_called_once()
 
-    def test_take_snapshot_no_frame(self, qtbot):
+    @patch('PyQt5.QtWidgets.QMessageBox.information')
+    def test_take_snapshot_no_frame(self, mock_info, qtbot):
         self.app.thread = None
-        with patch.object(QMessageBox, "information") as mock_info:
-            self.app.take_snapshot()
-            mock_info.assert_called_once_with(self.app, "Snapshot", "No frame available to save.")
+        qtbot.mouseClick(self.app.action_buttons.snapshot_button, Qt.LeftButton)
+        mock_info.assert_called_once_with(self.app, "Snapshot", "No frame available to save.")
+
+    def test_snapshot_button_click(self, qtbot):
+        self.app.thread = MagicMock()
+        self.app.thread.last_frame = np.zeros((10, 10, 3), dtype=np.uint8)
+        self.app.action_buttons.snapshot_button.setEnabled(True)
+        default_path = os.path.join(self.app.snapshot_dir, "snapshot.png")
+        with patch("PyQt5.QtWidgets.QFileDialog.getSaveFileName", return_value=(default_path, "")), \
+             patch("cv2.imwrite") as mock_imwrite, \
+             patch("PyQt5.QtWidgets.QMessageBox.information") as mock_info:
+            qtbot.mouseClick(self.app.action_buttons.snapshot_button, Qt.LeftButton)
+            mock_imwrite.assert_called_once_with(default_path, self.app.thread.last_frame)
+            mock_info.assert_called()
+
+    def test_start_button_click(self, qtbot):
+        self.app.device_combo.setCurrentText("video=C270 HD WEBCAM")
+        self.app.style_tab_manager.get_current_style = MagicMock(return_value="Original")
+        self.app.current_style_params = {}
+        self.app.current_style = MagicMock()
+        self.app.style_instances["Original"] = MagicMock()
+        # Simulate clicking start and check that thread is started
+        qtbot.mouseClick(self.app.action_buttons.start_button, Qt.LeftButton)
+        assert self.app.thread is not None
+
+    def test_stop_button_click(self, qtbot):
+        self.app.thread = MagicMock()
+        self.app.thread.isRunning.return_value = True
+        self.app.action_buttons.stop_button.setEnabled(True)
+        qtbot.mouseClick(self.app.action_buttons.stop_button, Qt.LeftButton)
+        # After stop, thread should be None
+        assert self.app.thread is None
+
+    def test_optimize_button_click(self, qtbot):
+        self.app.thread = MagicMock()
+        self.app.thread.last_frame = np.zeros((10, 10, 3), dtype=np.uint8)
+        self.app.current_style = MagicMock()
+        self.app.current_style.ai_optimize = MagicMock(return_value={})
+        self.app.current_style_params = {}
+        self.app.style_tab_manager.get_current_style = MagicMock(return_value="Original")
+        self.app.style_instances["Original"] = self.app.current_style
+        with patch("PyQt5.QtWidgets.QMessageBox.information") as mock_info:
+            qtbot.mouseClick(self.app.optimize_button, Qt.LeftButton)
+            mock_info.assert_called()
+
+    @patch('PyQt5.QtWidgets.QMessageBox.critical')
+    def test_optimize_button_no_frame(self, mock_critical, qtbot):
+        self.app.thread = None
+        qtbot.mouseClick(self.app.optimize_button, Qt.LeftButton)
+        mock_critical.assert_called_once()
+
+    def test_stop_button_disabled_when_not_running(self, qtbot):
+        # Stop button should be disabled if thread is not running
+        self.app.thread = None
+        self.app.action_buttons.stop_button.setEnabled(False)
+        assert not self.app.action_buttons.stop_button.isEnabled()
+
+    def test_start_button_disabled_when_running(self, qtbot):
+        # Start button should be disabled when thread is running
+        self.app.thread = MagicMock()
+        self.app.thread.isRunning.return_value = True
+        self.app.action_buttons.start_button.setEnabled(False)
+        assert not self.app.action_buttons.start_button.isEnabled()
 
 if __name__ == "__main__":
     pytest.main([__file__])

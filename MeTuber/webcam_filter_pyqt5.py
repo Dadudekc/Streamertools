@@ -18,6 +18,7 @@ from PyQt5.QtWidgets import (
     QFormLayout, QSlider, QPushButton, QMessageBox, QFileDialog, QComboBox, QTabWidget, QCheckBox
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QObject
+import traceback
 
 # Import GUI components
 from gui_components.device_selector import DeviceSelector
@@ -48,7 +49,8 @@ def load_settings():
     default_settings = {
         "input_device": "video=C270 HD WEBCAM",  # Example default
         "style": "Original",
-        "parameters": {}
+        "parameters": {},
+        "snapshot_dir": os.path.join(os.path.dirname(os.path.abspath(__file__)), 'snapshots') # Add default snapshot directory
     }
     if os.path.exists(CONFIG_FILE):
         try:
@@ -165,6 +167,25 @@ def load_styles():
 # 4. PyQt5 GUI
 # =============================================================================
 
+# Debug mode flag (can be set via config or env)
+DEBUG_MODE = os.environ.get("METUBER_DEBUG", "0") == "1"
+
+SNAPSHOT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'snapshots')
+if not os.path.exists(SNAPSHOT_DIR):
+    os.makedirs(SNAPSHOT_DIR)
+
+
+def show_error_dialog(parent, message, exc=None):
+    """Show a critical error dialog and log the error. If exc is provided, log with traceback."""
+    if exc:
+        logging.error(message, exc_info=True)
+        if DEBUG_MODE:
+            message += f"\n\nTraceback:\n{traceback.format_exc()}"
+    else:
+        logging.error(message)
+    QMessageBox.critical(parent, "Error", message)
+
+
 class WebcamApp(QWidget):
     """
     Main GUI application that manages device selection, style parameters,
@@ -183,6 +204,7 @@ class WebcamApp(QWidget):
 
         # Config settings
         self.settings = load_settings()
+        self.snapshot_dir = self.settings.get('snapshot_dir', SNAPSHOT_DIR)
 
         # Validate and load settings to ensure no invalid parameters
         self.validate_and_load_settings()
@@ -258,6 +280,35 @@ class WebcamApp(QWidget):
         self.optimize_button = QPushButton("Auto Optimize Parameters")
         self.optimize_button.clicked.connect(self.auto_optimize_parameters)
         layout.addWidget(self.optimize_button)
+        # 4.2) Set Snapshot Directory Button
+        self.set_snapshot_dir_button = QPushButton("Set Snapshot Save Folder")
+        self.set_snapshot_dir_button.clicked.connect(self.set_snapshot_directory)
+        layout.addWidget(self.set_snapshot_dir_button)
+
+        # 4.3) Performance Controls
+        performance_group = QGroupBox("Performance Settings")
+        performance_layout = QFormLayout()
+        
+        # Max FPS slider
+        self.max_fps_slider = QSlider(Qt.Horizontal)
+        self.max_fps_slider.setRange(1, 60)
+        self.max_fps_slider.setValue(30)
+        self.max_fps_label = QLabel("30")
+        self.max_fps_slider.valueChanged.connect(lambda v: self.max_fps_label.setText(str(v)))
+        performance_layout.addRow("Max FPS:", self.max_fps_slider)
+        performance_layout.addRow("", self.max_fps_label)
+        
+        # Frame skip slider
+        self.frame_skip_slider = QSlider(Qt.Horizontal)
+        self.frame_skip_slider.setRange(0, 10)
+        self.frame_skip_slider.setValue(0)
+        self.frame_skip_label = QLabel("0")
+        self.frame_skip_slider.valueChanged.connect(lambda v: self.frame_skip_label.setText(str(v)))
+        performance_layout.addRow("Frame Skip:", self.frame_skip_slider)
+        performance_layout.addRow("", self.frame_skip_label)
+        
+        performance_group.setLayout(performance_layout)
+        layout.addWidget(performance_group)
 
         # 5) Status Display
         self.status_label = QLabel("Status: Idle")
@@ -342,7 +393,10 @@ class WebcamApp(QWidget):
 
         # If the webcam thread is running, update parameters on the fly
         if self.thread and self.thread.isRunning():
-            self.thread.update_params(dict(self.current_style_params))
+            thread_params = dict(self.current_style_params)
+            thread_params['max_fps'] = self.max_fps_slider.value()
+            thread_params['frame_skip'] = self.frame_skip_slider.value()
+            self.thread.update_params(thread_params)
 
     def start_virtual_camera(self):
         """Starts the WebcamThread to capture frames via PyAV and stream them."""
@@ -365,11 +419,16 @@ class WebcamApp(QWidget):
         self.settings["parameters"][selected_style] = self.current_style_params
         save_settings(self.settings)
 
+        # Add performance parameters to style params
+        thread_params = dict(self.current_style_params)
+        thread_params['max_fps'] = self.max_fps_slider.value()
+        thread_params['frame_skip'] = self.frame_skip_slider.value()
+        
         # Initialize and start the thread
         self.thread = WebcamThread(
             input_device=input_device,
             style_instance=self.style_instances[selected_style],
-            style_params=dict(self.current_style_params)
+            style_params=thread_params
         )
         self.thread.error_signal.connect(self.display_error)
         self.thread.info_signal.connect(self.display_info)
@@ -395,21 +454,28 @@ class WebcamApp(QWidget):
         self.action_buttons.stop_button.setEnabled(False)
         self.action_buttons.snapshot_button.setEnabled(False)
 
+    def set_snapshot_directory(self):
+        dir_path = QFileDialog.getExistingDirectory(self, "Select Snapshot Save Folder", self.snapshot_dir)
+        if dir_path:
+            self.snapshot_dir = dir_path
+            self.settings['snapshot_dir'] = dir_path
+            save_settings(self.settings)
+
     def take_snapshot(self):
         """Capture the last processed frame and let the user save it."""
         if not self.thread or self.thread.last_frame is None:
             QMessageBox.information(self, "Snapshot", "No frame available to save.")
             return
-
-        save_path, _ = QFileDialog.getSaveFileName(self, "Save Snapshot", "", "Image Files (*.png *.jpg *.bmp)")
+        default_path = os.path.join(self.snapshot_dir, "snapshot.png")
+        save_path, _ = QFileDialog.getSaveFileName(self, "Save Snapshot", default_path, "Image Files (*.png *.jpg *.bmp)")
         if save_path:
             cv2.imwrite(save_path, self.thread.last_frame)
             QMessageBox.information(self, "Snapshot", f"Snapshot saved to:\n{save_path}")
             logging.info(f"Snapshot saved to: {save_path}")
 
-    def display_error(self, message):
+    def display_error(self, message, exc=None):
         """Show error messages via a dialog and stop the thread."""
-        QMessageBox.critical(self, "Error", message)
+        show_error_dialog(self, message, exc)
         self.stop_virtual_camera()
 
     def display_info(self, message):
@@ -421,7 +487,7 @@ class WebcamApp(QWidget):
         """Use AI to find the best parameters for the current style on the last frame."""
         # Ensure there's a frame to optimize on
         if not self.thread or self.thread.last_frame is None:
-            QMessageBox.warning(self, "AI Optimize Error", "No frame available for optimization.")
+            show_error_dialog(self, "No frame available for optimization.")
             return
         selected_style = self.current_style
         # Check if the style supports AI optimization
@@ -447,7 +513,7 @@ class WebcamApp(QWidget):
             save_settings(self.settings)
             QMessageBox.information(self, "AI Optimize", "Parameters optimized and updated.")
         except Exception as e:
-            QMessageBox.critical(self, "AI Optimize Error", f"Optimization failed: {e}")
+            show_error_dialog(self, f"Optimization failed: {e}", exc=e)
 
     def closeEvent(self, event):
         """Ensure the thread stops when closing the app."""
