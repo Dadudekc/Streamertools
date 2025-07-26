@@ -6,12 +6,13 @@ from typing import Dict, Any, List, Optional, Type
 from styles.base import Style
 
 class StyleManager:
-    """Manages style loading and instantiation with proper error handling and logging."""
+    """Manages style loading and instantiation with variant support and proper error handling."""
     
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         self.style_instances: Dict[str, Style] = {}
         self.style_categories: Dict[str, List[str]] = {}
+        self.style_variants: Dict[str, List[str]] = {}  # Track variants for each style
         self._load_styles()
     
     def _load_styles(self) -> None:
@@ -59,7 +60,13 @@ class StyleManager:
                                         self.style_categories[category].append(instance.name)
                                     
                                     self.style_instances[instance.name] = instance
-                                    self.logger.info(f"Loaded style: {instance.name} (Category: {category})")
+                                    
+                                    # Track variants for this style
+                                    if hasattr(instance, 'variants') and instance.variants:
+                                        self.style_variants[instance.name] = instance.variants.copy()
+                                        self.logger.info(f"Loaded style: {instance.name} (Category: {category}, Variants: {instance.variants})")
+                                    else:
+                                        self.logger.info(f"Loaded style: {instance.name} (Category: {category})")
                                     
                                 except Exception as instantiation_error:
                                     self.logger.error(f"Failed to instantiate style '{cls.__name__}': {instantiation_error}")
@@ -78,6 +85,27 @@ class StyleManager:
             self.logger.error(f"Error getting style {name}: {e}")
             return None
     
+    def get_style_with_variant(self, name: str, variant: str = None) -> Optional[Style]:
+        """Get a style instance with specific variant set."""
+        style = self.get_style(name)
+        if style and hasattr(style, 'variants'):
+            if variant is None:
+                variant = style.default_variant
+            if variant in style.variants:
+                # Set the variant and return style with updated parameters
+                style.set_variant(variant)
+                return style
+        return style
+    
+    def get_style_parameters(self, name: str, variant: str = None) -> List[Dict[str, Any]]:
+        """Get all parameters for a style including variant-specific ones."""
+        style = self.get_style_with_variant(name, variant)
+        if not style:
+            return []
+        
+        # Get all parameters including variant-specific ones
+        return style.get_variant_parameters(variant)
+    
     def get_categories(self) -> Dict[str, List[str]]:
         """Get all style categories and their styles."""
         return self.style_categories.copy()
@@ -90,6 +118,18 @@ class StyleManager:
             self.logger.error(f"Error getting styles for category {category}: {e}")
             return []
     
+    def get_style_variants(self, style_name: str) -> List[str]:
+        """Get available variants for a specific style."""
+        try:
+            return self.style_variants.get(style_name, []).copy()
+        except Exception as e:
+            self.logger.error(f"Error getting variants for style {style_name}: {e}")
+            return []
+    
+    def get_styles_with_variants(self) -> Dict[str, List[str]]:
+        """Get all styles that support variants."""
+        return {name: variants for name, variants in self.style_variants.items() if variants}
+    
     def validate_style_parameters(self, style_name: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """Validate parameters for a specific style."""
         try:
@@ -98,76 +138,104 @@ class StyleManager:
                 self.logger.warning(f"Style {style_name} not found")
                 return {}
             
-            # Get default parameters
-            defaults = self.get_default_parameters(style_name)
-            
-            # Start with defaults and update with provided parameters
-            validated = defaults.copy()
-            validated.update(parameters)
-            
-            # Validate each parameter
-            param_defs = {p["name"]: p for p in style.define_parameters()}
-            for name, value in validated.items():
-                if name in param_defs:
-                    param_def = param_defs[name]
-                    
-                    # Type validation
-                    if param_def["type"] == "int":
-                        value = int(value)
-                    elif param_def["type"] == "float":
-                        value = float(value)
-                    
-                    # Range validation
-                    if "min" in param_def:
-                        value = max(param_def["min"], value)
-                    if "max" in param_def:
-                        value = min(param_def["max"], value)
-                    
-                    validated[name] = value
-            
-            return validated
-            
+            return style.validate_params(parameters)
         except Exception as e:
             self.logger.error(f"Error validating parameters for style {style_name}: {e}")
             return {}
     
-    def get_default_parameters(self, style_name: str) -> Dict[str, Any]:
-        """Get default parameters for a specific style."""
+    def get_default_parameters(self, style_name: str, variant: str = None) -> Dict[str, Any]:
+        """Get default parameters for a specific style and variant."""
         try:
-            style = self.get_style(style_name)
+            style = self.get_style_with_variant(style_name, variant)
             if not style:
                 self.logger.warning(f"Style {style_name} not found")
                 return {}
             
-            return {
-                param['name']: param.get("default", 0)
-                for param in style.define_parameters()
-            }
+            # Get all parameters and extract defaults
+            params = style.get_variant_parameters(variant)
+            defaults = {}
+            for param in params:
+                if 'default' in param:
+                    defaults[param['name']] = param['default']
             
+            return defaults
         except Exception as e:
             self.logger.error(f"Error getting default parameters for style {style_name}: {e}")
             return {}
     
     def refresh_styles(self) -> None:
-        """Reload all styles."""
+        """Refresh the style list by reloading all styles."""
         self.style_instances.clear()
         self.style_categories.clear()
+        self.style_variants.clear()
         self._load_styles()
     
     def get_style_info(self, style_name: str) -> Optional[Dict[str, Any]]:
-        """Get information about a specific style."""
+        """Get comprehensive information about a style."""
         try:
             style = self.get_style(style_name)
             if not style:
                 return None
             
-            return {
-                "name": style.name,
-                "category": getattr(style, "category", "Uncategorized"),
-                "description": getattr(style, "description", ""),
-                "parameters": style.define_parameters()
-            }
-            
+            return style.get_style_info()
         except Exception as e:
-            self.logger.error(f"Error getting info for style {style_name}: {e}")
-            return None 
+            self.logger.error(f"Error getting style info for {style_name}: {e}")
+            return None
+    
+    def get_consolidated_style_mapping(self) -> Dict[str, Dict[str, str]]:
+        """Get mapping of old style names to new consolidated styles and variants."""
+        return {
+            # Cartoon styles mapping
+            "cartoon": {"style": "Cartoon", "variant": "Basic"},
+            "advanced_cartoon": {"style": "Cartoon", "variant": "Advanced"},
+            "advanced_cartoon2": {"style": "Cartoon", "variant": "Advanced2"},
+            "catoonwholeimage": {"style": "Cartoon", "variant": "WholeImage"},
+            
+            # Sketch styles mapping
+            "pencil_sketch": {"style": "Sketch", "variant": "Pencil"},
+            "advanced_pencil_sketch": {"style": "Sketch", "variant": "Advanced"},
+            "sketch_and_color": {"style": "Sketch", "variant": "Color"},
+            
+            # Invert styles mapping
+            "invert_colors": {"style": "Invert", "variant": "Colors"},
+            "invert_filter": {"style": "Invert", "variant": "Filter"},
+            "negative": {"style": "Invert", "variant": "Negative"},
+        }
+    
+    def migrate_old_style_name(self, old_name: str) -> Optional[Dict[str, str]]:
+        """Migrate old style name to new consolidated style and variant."""
+        mapping = self.get_consolidated_style_mapping()
+        return mapping.get(old_name.lower())
+    
+    def get_style_complexity(self, style_name: str, variant: str = None) -> str:
+        """Get the complexity level of a style for performance optimization."""
+        try:
+            style = self.get_style_with_variant(style_name, variant)
+            if not style:
+                return "low"
+            
+            # Get all parameters for the style
+            params = style.get_variant_parameters(variant)
+            param_count = len(params)
+            
+            # Check for computationally expensive operations in the style class
+            style_code = inspect.getsource(style.__class__)
+            expensive_ops = ['cv2.GaussianBlur', 'cv2.medianBlur', 'cv2.bilateralFilter', 
+                           'cv2.Canny', 'cv2.Laplacian', 'cv2.Sobel']
+            
+            complexity_score = param_count
+            for op in expensive_ops:
+                if op in style_code:
+                    complexity_score += 2
+            
+            # Determine complexity level
+            if complexity_score > 8:
+                return "high"
+            elif complexity_score > 4:
+                return "medium"
+            else:
+                return "low"
+                
+        except Exception as e:
+            self.logger.error(f"Error determining complexity for style {style_name}: {e}")
+            return "low" 

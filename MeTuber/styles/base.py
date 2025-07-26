@@ -6,10 +6,12 @@ import numpy as np
 
 class Style(ABC):
     """
-    Abstract base class for all styles.
+    Abstract base class for all styles with variant/mode support.
     """
     name = "BaseStyle"
     category = "Base"
+    variants = []  # List of available variants/modes
+    default_variant = None  # Default variant to use
 
     def __init__(self):
         # Initialize and normalize parameter definitions
@@ -42,6 +44,13 @@ class Style(ABC):
         else:
             raise TypeError(f"define_parameters must return a dict or list, got {type(params)}")
 
+        # Set default variant if not specified
+        if self.default_variant is None and self.variants:
+            self.default_variant = self.variants[0]
+        
+        # Current variant tracking
+        self.current_variant = self.default_variant
+
     @abstractmethod
     def define_parameters(self) -> List[Dict[str, Any]]:
         """
@@ -49,6 +58,89 @@ class Style(ABC):
         Must be implemented by subclasses.
         """
         return []
+
+    def define_variant_parameters(self, variant: str) -> List[Dict[str, Any]]:
+        """
+        Define parameters specific to a variant.
+        Override this method to provide variant-specific parameters.
+        
+        Args:
+            variant (str): The variant name
+            
+        Returns:
+            List[Dict[str, Any]]: List of parameter definitions for the variant
+        """
+        return []
+
+    def get_available_variants(self) -> List[str]:
+        """
+        Get list of available variants for this style.
+        
+        Returns:
+            List[str]: List of available variant names
+        """
+        return self.variants.copy()
+
+    def validate_variant(self, variant: str) -> bool:
+        """
+        Validate if a variant is supported by this style.
+        
+        Args:
+            variant (str): The variant to validate
+            
+        Returns:
+            bool: True if variant is valid, False otherwise
+        """
+        return variant in self.variants
+
+    def get_variant_parameters(self, variant: str = None) -> List[Dict[str, Any]]:
+        """
+        Get all parameters for a specific variant including base parameters.
+        
+        Args:
+            variant (str): The variant name (uses current_variant if None)
+            
+        Returns:
+            List[Dict[str, Any]]: Combined list of base and variant-specific parameters
+        """
+        if variant is None:
+            variant = self.current_variant
+        
+        if not self.validate_variant(variant):
+            raise ValueError(f"Invalid variant '{variant}' for style '{self.name}'")
+        
+        # Get base parameters
+        all_params = self.parameters.copy()
+        
+        # Add variant-specific parameters
+        variant_params = self.define_variant_parameters(variant)
+        all_params.extend(variant_params)
+        
+        return all_params
+
+    def set_variant(self, variant: str) -> bool:
+        """
+        Set the current variant for this style.
+        
+        Args:
+            variant (str): The variant to set
+            
+        Returns:
+            bool: True if variant was set successfully, False otherwise
+        """
+        if self.validate_variant(variant):
+            self.current_variant = variant
+            return True
+        return False
+
+    def get_current_variant(self) -> str:
+        """
+        Get the current variant for this style.
+        
+        Returns:
+            str: Current variant name
+        """
+        return self.current_variant
 
     def apply(self, frame: Optional[np.ndarray], params: Optional[Dict[str, Any]] = None) -> np.ndarray:
         """
@@ -81,7 +173,11 @@ class Style(ABC):
             dict: Validated parameters with defaults applied.
         """
         validated = {}
-        for param in self.parameters:
+        
+        # Get all parameters including variant-specific ones
+        all_params = self.get_variant_parameters(self.current_variant)
+        
+        for param in all_params:
             name = param["name"]
             value = params.get(name, param.get("default"))
 
@@ -90,31 +186,43 @@ class Style(ABC):
                 min_val = param.get("min", float("-inf"))
                 max_val = param.get("max", float("inf"))
                 if not (min_val <= value <= max_val):
-                    raise ValueError(
-                        f"Parameter '{name}' must be between {min_val} and {max_val}."
-                    )
+                    # Clamp value to valid range instead of raising error
+                    if value < min_val:
+                        value = min_val
+                    elif value > max_val:
+                        value = max_val
 
             # Validate options for string parameters
             if param["type"] == "str" and "options" in param:
                 if value not in param["options"]:
-                    raise ValueError(
-                        f"Parameter '{name}' must be one of {param['options']}."
-                    )
+                    # Use default if invalid option provided
+                    value = param.get("default", param["options"][0])
 
             validated[name] = value
+
         return validated
 
     def describe(self) -> str:
         """
-        Provide a human-readable description of the style and its parameters.
+        Get a description of the style.
 
         Returns:
-            str: Description of the style and its parameters.
+            str: Description of the style.
         """
-        description = f"Style: {self.name}\nCategory: {self.category}\nParameters:\n"
-        for param in self.parameters:
-            description += (
-                f"  - {param['name']}: {param['type']} "
-                f"(Default: {param.get('default')}, Min: {param.get('min')}, Max: {param.get('max')}, Step: {param.get('step')})\n"
-            )
-        return description
+        return f"{self.name} ({self.category})"
+
+    def get_style_info(self) -> Dict[str, Any]:
+        """
+        Get comprehensive information about the style.
+
+        Returns:
+            Dict[str, Any]: Style information including name, category, variants, and parameters
+        """
+        return {
+            "name": self.name,
+            "category": self.category,
+            "variants": self.get_available_variants(),
+            "current_variant": self.get_current_variant(),
+            "parameters": self.get_variant_parameters(self.current_variant),
+            "description": self.describe()
+        }
