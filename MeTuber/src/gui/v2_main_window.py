@@ -415,11 +415,17 @@ class V2MainWindow(QMainWindow):
                 QMessageBox.critical(self, "Error", f"Device ID not found for {device_name}")
                 return
             
-            # Get current style and parameters
-            current_style = self.style_selector.get_current_style()
+            # Get current style selection and parameters
+            selection = self.style_selector.get_current_selection()
+            style_name = selection.get("style")
+            variant = selection.get("variant") or None
+            style_instance = None
+            if style_name:
+                style_instance = self.style_manager.get_style_with_variant(style_name, variant)
+
             current_params = self.parameter_controls.get_parameters()
-            
-            if self.webcam_service.start(device_id, current_style, current_params):
+
+            if self.webcam_service.start(device_id, style_instance, current_params):
                 self.preview_area.set_playing_state(True)
                 self.action_buttons.start_button.setEnabled(False)
                 self.action_buttons.stop_button.setEnabled(True)
@@ -495,8 +501,12 @@ class V2MainWindow(QMainWindow):
             self.settings_manager.set_setting("style_category", category)
             self.settings_manager.set_setting("style", style)
             
-            # Update parameter controls
-            # TODO: Get parameters from style manager
+            selection = self.style_selector.get_current_selection()
+            variant = selection.get("variant") or None
+            style_instance = self.style_manager.get_style_with_variant(style, variant)
+            if style_instance:
+                self.parameter_controls.set_style(style_instance)
+
             self.accessibility_manager.announce_status(f"Style changed to {style}")
             
         except Exception as e:
@@ -506,6 +516,9 @@ class V2MainWindow(QMainWindow):
         """Handle style variant change."""
         try:
             self.settings_manager.set_setting("style_variant", variant)
+            style_instance = self.style_manager.get_style_with_variant(style, variant)
+            if style_instance:
+                self.parameter_controls.set_style(style_instance)
             self.accessibility_manager.announce_status(f"Variant changed to {variant}")
             
         except Exception as e:
