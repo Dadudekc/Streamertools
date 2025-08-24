@@ -439,6 +439,7 @@ class V2MainWindow(QMainWindow):
             self.preview_area.set_playing_state(False)
             self.action_buttons.start_button.setEnabled(True)
             self.action_buttons.stop_button.setEnabled(False)
+            self.action_buttons.snapshot_button.setEnabled(False)
             self.status_label.setText("Camera stopped")
             self.accessibility_manager.announce_status("Camera stopped")
             
