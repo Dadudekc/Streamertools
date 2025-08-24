@@ -522,10 +522,14 @@ class V2MainWindow(QMainWindow):
     def _on_webcam_error(self, message: str) -> None:
         """Handle webcam service errors."""
         try:
+            # Ensure camera is fully stopped so buttons reset and user can retry
+            self._stop_camera()
+            self.action_buttons.snapshot_button.setEnabled(False)
+
             self.preview_area.show_error(message)
             self.status_label.setText(f"Error: {message}")
             self.logger.error(f"Webcam error: {message}")
-            
+
         except Exception as e:
             self.logger.error(f"Error handling webcam error: {e}")
     
