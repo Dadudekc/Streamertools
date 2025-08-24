@@ -416,10 +416,13 @@ class V2MainWindow(QMainWindow):
                 return
             
             # Get current style and parameters
-            current_style = self.style_selector.get_current_style()
+            selection = self.style_selector.get_current_selection()
+            style_instance = self.style_manager.get_style_with_variant(
+                selection["style"], selection["variant"]
+            )
             current_params = self.parameter_controls.get_parameters()
-            
-            if self.webcam_service.start(device_id, current_style, current_params):
+
+            if self.webcam_service.start(device_id, style_instance, current_params):
                 self.preview_area.set_playing_state(True)
                 self.action_buttons.start_button.setEnabled(False)
                 self.action_buttons.stop_button.setEnabled(True)
