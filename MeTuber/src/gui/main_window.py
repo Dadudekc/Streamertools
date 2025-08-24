@@ -91,6 +91,11 @@ class MainWindow(QMainWindow):
             # 4. Action Buttons
             self.action_buttons = ActionButtons(self)
             layout.addWidget(self.action_buttons)
+
+            # Connect action button signals
+            self.action_buttons.start_camera.connect(self.start_virtual_camera)
+            self.action_buttons.stop_camera.connect(self.stop_virtual_camera)
+            self.action_buttons.take_snapshot.connect(self.take_snapshot)
             
             # 5. Status Display
             self.status_label = QLabel("Status: Idle")
@@ -226,25 +231,41 @@ class MainWindow(QMainWindow):
             device_id = self.device_selector.get_selected_device()
             if not device_id or not self.device_manager.validate_device(device_id):
                 self.display_error("No valid device selected")
+                if self.action_buttons:
+                    self.action_buttons.start_button.setEnabled(True)
+                    self.action_buttons.stop_button.setEnabled(False)
+                    self.action_buttons.snapshot_button.setEnabled(False)
                 return False
-            
+
             style_name = self.style_tab_manager.get_current_style()
             style = self.style_manager.get_style(style_name) if style_name else None
-            
+
             params = {}
             if style and self.parameter_controls:
                 params = self.parameter_controls.get_parameters()
-            
+
             if self.webcam_service.start(device_id, style, params):
                 self.display_info("Running")
+                if self.action_buttons:
+                    self.action_buttons.start_button.setEnabled(False)
+                    self.action_buttons.stop_button.setEnabled(True)
+                    self.action_buttons.snapshot_button.setEnabled(True)
                 return True
-            else:
-                self.display_error("Failed to start virtual camera")
-                return False
-                
+
+            self.display_error("Failed to start virtual camera")
+            if self.action_buttons:
+                self.action_buttons.start_button.setEnabled(True)
+                self.action_buttons.stop_button.setEnabled(False)
+                self.action_buttons.snapshot_button.setEnabled(False)
+            return False
+
         except Exception as e:
             self.logger.error(f"Error starting virtual camera: {e}")
             self.display_error(f"Error starting virtual camera: {str(e)}")
+            if self.action_buttons:
+                self.action_buttons.start_button.setEnabled(True)
+                self.action_buttons.stop_button.setEnabled(False)
+                self.action_buttons.snapshot_button.setEnabled(False)
             return False
     
     def stop_virtual_camera(self) -> None:
@@ -252,10 +273,18 @@ class MainWindow(QMainWindow):
         try:
             self.webcam_service.stop()
             self.display_info("Idle")
-            
+            if self.action_buttons:
+                self.action_buttons.start_button.setEnabled(True)
+                self.action_buttons.stop_button.setEnabled(False)
+                self.action_buttons.snapshot_button.setEnabled(False)
+
         except Exception as e:
             self.logger.error(f"Error stopping virtual camera: {e}")
             self.display_error(f"Error stopping virtual camera: {str(e)}")
+            if self.action_buttons:
+                self.action_buttons.start_button.setEnabled(True)
+                self.action_buttons.stop_button.setEnabled(False)
+                self.action_buttons.snapshot_button.setEnabled(False)
     
     def take_snapshot(self) -> None:
         """Take a snapshot of the current frame."""
