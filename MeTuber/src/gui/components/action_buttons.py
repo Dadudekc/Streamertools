@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Callable
+from typing import Optional
 from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout
 from PyQt5.QtCore import pyqtSignal
 
@@ -61,7 +61,7 @@ class ActionButtons(QWidget):
             self.logger.debug("Start camera signal emitted")
         except Exception as e:
             self.logger.error(f"Error handling start button click: {str(e)}")
-            self._reset_button_states()
+            self.reset()
             
     def _on_stop_clicked(self) -> None:
         """Handle stop button click event."""
@@ -73,7 +73,7 @@ class ActionButtons(QWidget):
             self.logger.debug("Stop camera signal emitted")
         except Exception as e:
             self.logger.error(f"Error handling stop button click: {str(e)}")
-            self._reset_button_states()
+            self.reset()
             
     def _on_snapshot_clicked(self) -> None:
         """Handle snapshot button click event."""
@@ -83,7 +83,7 @@ class ActionButtons(QWidget):
         except Exception as e:
             self.logger.error(f"Error handling snapshot button click: {str(e)}")
             
-    def _reset_button_states(self) -> None:
+    def reset(self) -> None:
         """Reset all buttons to their default states."""
         try:
             self.start_button.setEnabled(True)
@@ -105,4 +105,4 @@ class ActionButtons(QWidget):
             self.snapshot_button.setEnabled(False)
             self.logger.debug(f"All buttons {'enabled' if enabled else 'disabled'}")
         except Exception as e:
-            self.logger.error(f"Error setting button enabled states: {str(e)}") 
+            self.logger.error(f"Error setting button enabled states: {str(e)}")
