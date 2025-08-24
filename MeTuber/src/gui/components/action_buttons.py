@@ -95,14 +95,18 @@ class ActionButtons(QWidget):
             
     def set_enabled(self, enabled: bool) -> None:
         """Enable or disable all buttons.
-        
+
         Args:
             enabled: Whether to enable or disable the buttons
         """
         try:
             self.start_button.setEnabled(enabled)
-            self.stop_button.setEnabled(False)
-            self.snapshot_button.setEnabled(False)
-            self.logger.debug(f"All buttons {'enabled' if enabled else 'disabled'}")
+            self.stop_button.setEnabled(enabled)
+            self.snapshot_button.setEnabled(enabled)
+            self.logger.debug(
+                f"All buttons {'enabled' if enabled else 'disabled'}"
+            )
         except Exception as e:
-            self.logger.error(f"Error setting button enabled states: {str(e)}") 
+            self.logger.error(
+                f"Error setting button enabled states: {str(e)}"
+            )
