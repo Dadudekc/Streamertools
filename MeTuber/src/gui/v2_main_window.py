@@ -525,7 +525,9 @@ class V2MainWindow(QMainWindow):
             self.preview_area.show_error(message)
             self.status_label.setText(f"Error: {message}")
             self.logger.error(f"Webcam error: {message}")
-            
+            self.action_buttons._reset_button_states()
+            self.preview_area.set_playing_state(False)
+
         except Exception as e:
             self.logger.error(f"Error handling webcam error: {e}")
     
