@@ -54,9 +54,7 @@ class ActionButtons(QWidget):
     def _on_start_clicked(self) -> None:
         """Handle start button click event."""
         try:
-            self.start_button.setEnabled(False)
-            self.stop_button.setEnabled(True)
-            self.snapshot_button.setEnabled(True)
+            # Only emit the signal; the main window will handle state changes
             self.start_camera.emit()
             self.logger.debug("Start camera signal emitted")
         except Exception as e:

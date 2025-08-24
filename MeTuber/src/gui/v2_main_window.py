@@ -394,43 +394,47 @@ class V2MainWindow(QMainWindow):
     
     def _start_camera(self) -> None:
         """Start the webcam service."""
+        success = False
         try:
             device_name = self.device_combo.currentText()
             if not device_name:
                 QMessageBox.warning(self, "Warning", "Please select a camera device")
-                return
-            
-            # Convert device name to device ID
-            devices = self.device_manager.get_devices()
-            device_id = None
-            for device in devices:
-                if isinstance(device, dict) and device.get("name") == device_name:
-                    device_id = device.get("id")
-                    break
-                elif isinstance(device, str) and device == device_name:
-                    device_id = device
-                    break
-            
-            if not device_id:
-                QMessageBox.critical(self, "Error", f"Device ID not found for {device_name}")
-                return
-            
-            # Get current style and parameters
-            current_style = self.style_selector.get_current_style()
-            current_params = self.parameter_controls.get_parameters()
-            
-            if self.webcam_service.start(device_id, current_style, current_params):
-                self.preview_area.set_playing_state(True)
-                self.action_buttons.start_button.setEnabled(False)
-                self.action_buttons.stop_button.setEnabled(True)
-                self.status_label.setText("Camera started")
-                self.accessibility_manager.announce_status("Camera started")
             else:
-                QMessageBox.critical(self, "Error", "Failed to start camera")
-            
+                # Convert device name to device ID
+                devices = self.device_manager.get_devices()
+                device_id = None
+                for device in devices:
+                    if isinstance(device, dict) and device.get("name") == device_name:
+                        device_id = device.get("id")
+                        break
+                    elif isinstance(device, str) and device == device_name:
+                        device_id = device
+                        break
+
+                if not device_id:
+                    QMessageBox.critical(self, "Error", f"Device ID not found for {device_name}")
+                else:
+                    # Get current style and parameters
+                    current_style = self.style_selector.get_current_style()
+                    current_params = self.parameter_controls.get_parameters()
+
+                    if self.webcam_service.start(device_id, current_style, current_params):
+                        self.preview_area.set_playing_state(True)
+                        self.action_buttons.start_button.setEnabled(False)
+                        self.action_buttons.stop_button.setEnabled(True)
+                        self.action_buttons.snapshot_button.setEnabled(True)
+                        self.status_label.setText("Camera started")
+                        self.accessibility_manager.announce_status("Camera started")
+                        success = True
+                    else:
+                        QMessageBox.critical(self, "Error", "Failed to start camera")
+
         except Exception as e:
             self.logger.error(f"Error starting camera: {e}")
             QMessageBox.critical(self, "Error", f"Failed to start camera: {str(e)}")
+        finally:
+            if not success:
+                self.action_buttons._reset_button_states()
     
     def _stop_camera(self) -> None:
         """Stop the webcam service."""
