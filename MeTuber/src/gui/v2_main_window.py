@@ -423,10 +423,12 @@ class V2MainWindow(QMainWindow):
                 self.preview_area.set_playing_state(True)
                 self.action_buttons.start_button.setEnabled(False)
                 self.action_buttons.stop_button.setEnabled(True)
+                self.action_buttons.snapshot_button.setEnabled(True)
                 self.status_label.setText("Camera started")
                 self.accessibility_manager.announce_status("Camera started")
             else:
                 QMessageBox.critical(self, "Error", "Failed to start camera")
+                self.action_buttons._reset_button_states()
             
         except Exception as e:
             self.logger.error(f"Error starting camera: {e}")
