@@ -398,6 +398,7 @@ class V2MainWindow(QMainWindow):
             device_name = self.device_combo.currentText()
             if not device_name:
                 QMessageBox.warning(self, "Warning", "Please select a camera device")
+                self.action_buttons.reset()
                 return
             
             # Convert device name to device ID
@@ -413,6 +414,7 @@ class V2MainWindow(QMainWindow):
             
             if not device_id:
                 QMessageBox.critical(self, "Error", f"Device ID not found for {device_name}")
+                self.action_buttons.reset()
                 return
             
             # Get current style and parameters
@@ -427,10 +429,12 @@ class V2MainWindow(QMainWindow):
                 self.accessibility_manager.announce_status("Camera started")
             else:
                 QMessageBox.critical(self, "Error", "Failed to start camera")
+                self.action_buttons.reset()
             
         except Exception as e:
             self.logger.error(f"Error starting camera: {e}")
             QMessageBox.critical(self, "Error", f"Failed to start camera: {str(e)}")
+            self.action_buttons.reset()
     
     def _stop_camera(self) -> None:
         """Stop the webcam service."""
